@@ -1,0 +1,59 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    ports:
+      - "6500:5432"
+    volumes:
+      - progresDB:/var/lib/postgresql/data
+    env_file:
+      - ./.env
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d rust_sqlx"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+
+  pgAdmin:
+    image: dpage/pgadmin4
+    container_name: pgAdmin
+    env_file:
+      - ./.env
+    ports:
+      - "5050:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  rust-project:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rust-project-container
+    env_file:
+      - ./.env
+    environment:
+      - DATABASE_URL=postgres://admin:password123@postgres:5432/rust_sqlx
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+    volumes:
+      - rust_target:/usr/src/app/target  
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  progresDB:
+  rust_target:  
