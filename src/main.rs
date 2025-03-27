@@ -1,9 +1,10 @@
 mod controller;
 mod handler;
+mod middleware;
 mod model;
+mod modules;
 mod route;
 mod schema;
-mod modules;
 
 use std::sync::Arc;
 
@@ -12,6 +13,7 @@ use axum::http::{
     HeaderValue, Method,
 };
 use dotenv::dotenv;
+use modules::auth::auth_service::AuthService;
 use route::create_router;
 use tower_http::cors::CorsLayer;
 
@@ -20,11 +22,16 @@ use tokio_postgres::{Client, Error, NoTls};
 
 pub struct AppState {
     db: Client,
+    auth: AuthService,
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     dotenv().ok();
+
+    // jwt_secret is used to sign the JWT token
+    let jwt_secret = std::env::var("JWT_SECRET").expect("JWT_SECRET must be set");
+    let auth_service = AuthService::new(jwt_secret);
 
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
@@ -54,10 +61,14 @@ async fn main() -> Result<(), Error> {
         .allow_credentials(true)
         .allow_headers([AUTHORIZATION, ACCEPT, CONTENT_TYPE]);
 
-    let app = create_router(Arc::new(AppState { db: client })).layer(cors);
+    let app = create_router(Arc::new(AppState {
+        db: client,
+        auth: auth_service,
+    }))
+    .layer(cors);
 
     println!("🚀 Server started successfully");
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:8002").await.unwrap();
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:8001").await.unwrap();
     axum::serve(listener, app).await.unwrap();
 
     Ok(())
