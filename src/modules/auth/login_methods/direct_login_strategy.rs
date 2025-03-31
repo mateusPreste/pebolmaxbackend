@@ -25,7 +25,6 @@ impl LoginStrategy for DirectLoginStrategy {
             .map_err(|e| e.to_string())?;
 
         Ok(LoginResponse {
-            token,
             user_id: user_id,
         })
     }

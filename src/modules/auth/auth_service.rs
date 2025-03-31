@@ -27,6 +27,7 @@ impl AuthService {
         Self { jwt_secret }
     }
 
+    // there's 3 permissions: user, admin and referee
     pub fn generate_token(&self, user_id: &String) -> Result<String, Error> {
         let now = Utc::now();
         let expires_at = now + Duration::hours(24);
@@ -131,6 +132,7 @@ pub async fn create_new_user_and_credentials(
         id: 0,
         nome: payload.nome.clone(),
         cpf: payload.cpf.clone(),
+        email: payload.email.clone(),
         apelido: payload.apelido.clone(),
         foto: Some(payload.foto.clone()),
         reputacao: None,
@@ -139,7 +141,7 @@ pub async fn create_new_user_and_credentials(
     let credentials = Credenciais {
         id: 0,
         usuario_id: 0,
-        email: "".to_string(),
+        email: payload.email.clone(),
         email_verified: false,
         phone_number: None,
         phone_verified: false,

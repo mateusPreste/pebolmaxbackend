@@ -7,6 +7,7 @@ use axum::{
     Json,
 };
 use serde_json::json;
+use tokio::sync::Mutex;
 use tokio_postgres::Row;
 
 use crate::{
@@ -41,13 +42,14 @@ fn row_to_note(row: &Row) -> NoteModel {
 
 pub async fn note_list_handler(
     opts: Option<Query<FilterOptions>>,
-    State(data): State<Arc<AppState>>,
+    State(data): State<Arc<Mutex<AppState>>>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
     let Query(opts) = opts.unwrap_or_default();
 
     let limit = opts.limit.unwrap_or(10);
     let offset = (opts.page.unwrap_or(1) - 1) * limit;
 
+    let data = data.lock().await;
     let client = &data.db;
 
     let query_result = client
@@ -77,9 +79,10 @@ pub async fn note_list_handler(
 }
 
 pub async fn create_note_handler(
-    State(data): State<Arc<AppState>>,
+    State(data): State<Arc<Mutex<AppState>>>,
     Json(body): Json<CreateNoteSchema>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let data = data.lock().await;
     let client = &data.db;
 
     let category = body.category.unwrap_or_else(|| "".to_string());

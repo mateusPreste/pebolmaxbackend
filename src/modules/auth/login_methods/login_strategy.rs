@@ -25,7 +25,6 @@ pub struct LoginRequest {
 #[derive(Debug, Deserialize, Serialize)]
 #[allow(non_snake_case)]
 pub struct LoginResponse {
-    pub token: String,
     pub user_id: String,
 }
 

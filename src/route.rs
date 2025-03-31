@@ -1,9 +1,10 @@
 use axum::{
     middleware,
-    routing::{delete, get, patch, post},
-    Router,
+    routing::{delete, get, patch, post, MethodRouter},
+    Error, Router,
 };
 use std::sync::Arc;
+use tokio::sync::Mutex;
 
 use crate::{
     controller::note_controller::{
@@ -11,33 +12,48 @@ use crate::{
         healthchecker_controller, note_list_controller,
     },
     middleware::auth_middleware,
-    modules::auth::auth_controller::{login_controller, register_user_controller},
+    modules::{
+        arenas::{
+            arenas_controller::{register_estabelecimento_controller, register_quadras_controller},
+            arenas_model::{Estabelecimento, RegisterQuadraInput},
+        },
+        auth::auth_controller::{login_controller, register_user_controller},
+    },
     AppState,
 };
 
-pub fn create_router(app_state: Arc<AppState>) -> Router {
-    let auth_routes = Router::new()
-        .route("/login", post(login_controller))
-        .route("/register", post(register_user_controller));
+pub fn create_router(app_state: Arc<Mutex<AppState>>) -> Result<Router, Error> {
+    let auth_routes: Router<Arc<Mutex<AppState>>> = Router::new()
+        .route("/auth/login", post(login_controller))
+        .route("/auth/register", post(register_user_controller));
 
-    let protected_routes = Router::new()
-        .route("/notes", get(note_list_controller))
-        .route("/notes/", post(create_note_controller))
+    let arenas_routes = Router::new()
         .route(
-            "/notes/:id",
-            get(get_note_controller)
-                .patch(edit_note_controller)
-                .delete(delete_note_controller),
+            "/organization",
+            post(register_estabelecimento_controller::<Estabelecimento>),
         )
-        .route("/user/:id/notes", get(note_list_controller))
-        .layer(middleware::from_fn_with_state(
-            app_state.clone(),
-            auth_middleware,
-        ));
+        .route(
+            "/venue",
+            post(register_quadras_controller::<RegisterQuadraInput>),
+        );
 
-    Router::new()
-        .route("/healthchecker", get(healthchecker_controller))
+    /* let protected_routes = Router::new()
+    .route("/notes", get(note_list_controller))
+    .route("/notes/", post(create_note_controller))
+    .route(
+        "/notes/:id",
+        get(get_note_controller)
+            .patch(edit_note_controller)
+            .delete(delete_note_controller),
+    )
+    .route("/user/:id/notes", get(note_list_controller))
+    .layer(middleware::from_fn_with_state(
+        app_state.clone(),
+        auth_middleware,
+    )); */
+
+    Ok(Router::new()
         .nest("/api", auth_routes)
-        .nest("/api", protected_routes)
-        .with_state(app_state)
+        .nest("/api/arenas", arenas_routes)
+        .with_state(app_state))
 }

@@ -13,29 +13,12 @@ pub struct GoogleLoginStrategy {
 #[async_trait]
 impl LoginStrategy for GoogleLoginStrategy {
     async fn authenticate(&self, params: &LoginParams) -> Result<LoginResponse, String> {
-        let id_token = params
-            .id_token
-            .as_ref()
-            .ok_or("id_token is required for Google login")?;
-        let user_id = params
-            .user_id
-            .as_ref()
-            .ok_or("user_id is required for Google login")?;
-
         // check if the oauth token is valid
         let user_data = check_oauth_acess_token(params)
             .await
             .map_err(|e| format!("Google token validation failed: {}", e))?;
 
-        let token = self
-            .auth_service
-            .generate_token(user_id)
-            .map_err(|e| e.to_string())?;
-
-        Ok(LoginResponse {
-            token,
-            user_id: user_data,
-        })
+        Ok(LoginResponse { user_id: user_data })
     }
 }
 

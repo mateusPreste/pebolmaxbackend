@@ -4,6 +4,7 @@ use axum::debug_handler;
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use tokio::sync::Mutex;
 
 use crate::modules::auth::auth_model::{Credenciais, Usuario};
 use crate::modules::auth::auth_service::DbUserResult;
@@ -16,24 +17,47 @@ use super::login_methods::login_strategy::{
 
 #[debug_handler]
 pub async fn login_controller(
-    State(state): State<Arc<AppState>>,
+    State(state): State<Arc<Mutex<AppState>>>,
     Json(payload): Json<LoginRequest>,
 ) -> Result<impl IntoResponse, StatusCode> {
-    match state
-        .auth
-        .process_login(&state.db, &payload.login_method, &payload.params)
+    let mut_state = state.lock().await;
+    let auth = &mut_state.auth;
+    let db = &mut_state.db;
+
+    match auth
+        .process_login(&db, &payload.login_method, &payload.params)
         .await
     {
-        DbUserResult::Ok((login_data, usuario)) => Ok((
-            StatusCode::OK,
-            Json(json!({
-                "success": true,
-                "user": usuario,
-                "token": login_data.token,
-                "user_id": login_data.user_id,
-            })),
-        )
-            .into_response()),
+        DbUserResult::Ok((login_data, usuario)) => {
+            let token = match auth
+                .generate_token(&login_data.user_id)
+                .map_err(|e| e.to_string())
+            {
+                Ok(token) => token,
+                Err(e) => {
+                    return Ok((
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        Json(json!({
+                            "error": "Internal server error",
+                            "message": e,
+                        })),
+                    )
+                        .into_response())
+                }
+            };
+
+            Ok((
+                StatusCode::OK,
+                Json(json!({
+                    "success": true,
+                    "user": usuario,
+                    "token": token,
+                    "user_id": login_data.user_id,
+                })),
+            )
+                .into_response())
+        }
+
         DbUserResult::NotFound => Ok((
             StatusCode::NOT_FOUND,
             Json(json!({
@@ -57,6 +81,7 @@ pub async fn login_controller(
 pub struct UserData {
     pub nome: String,
     pub cpf: String,
+    pub email: String,
     pub apelido: String,
     pub foto: String,
     pub oauth_provider: String,
@@ -67,13 +92,16 @@ pub struct UserData {
 }
 #[debug_handler]
 pub async fn register_user_controller(
-    State(state): State<Arc<AppState>>,
+    State(state): State<Arc<Mutex<AppState>>>,
     Json(payload): Json<UserData>,
 ) -> Result<impl IntoResponse, StatusCode> {
-    let login_result = state
-        .auth
+    let mut_state = state.lock().await;
+    let auth = &mut_state.auth;
+    let db = &mut_state.db;
+
+    let login_result = auth
         .process_login(
-            &state.db,
+            db,
             &payload.login_method,
             &LoginParams {
                 id_token: Some(payload.token.clone()),
@@ -85,33 +113,63 @@ pub async fn register_user_controller(
     match login_result {
         // When login is successful, return token and found user.
         DbUserResult::Ok((login_data, usuario)) => {
-            let response = json!({
-                "success": true,
-                "user": usuario,
-                "token": login_data.token,
-                "user_id": login_data.user_id,
-            });
-            Ok((StatusCode::OK, Json(response)).into_response())
-        }
-        // When no user is found, create a new user and credentials record.
-        DbUserResult::NotFound => {
-            match create_new_user_and_credentials(&state.db, &payload).await {
-                Ok((usuario, credenciais)) => {
-                    let response = json!({
-                        "user": usuario,
-                        "success": true,
-                    });
-                    Ok((StatusCode::CREATED, Json(response)).into_response())
-                }
+            let token = match auth
+                .generate_token(&login_data.user_id)
+                .map_err(|e| e.to_string())
+            {
+                Ok(token) => token,
                 Err(e) => {
                     let response = json!({
                         "error": "Internal server error",
                         "message": e,
                     });
-                    Ok((StatusCode::INTERNAL_SERVER_ERROR, Json(response)).into_response())
+                    return Ok((StatusCode::INTERNAL_SERVER_ERROR, Json(response)).into_response());
                 }
-            }
+            };
+
+            let response = json!({
+                "success": true,
+                "user": usuario,
+                "token": token,
+                "user_id": login_data.user_id,
+            });
+            Ok((StatusCode::OK, Json(response)).into_response())
         }
+        // When no user is found, create a new user and credentials record.
+        DbUserResult::NotFound => match create_new_user_and_credentials(&db, &payload).await {
+            Ok((usuario, credenciais)) => {
+                let token = match auth
+                    .generate_token(&payload.user_id)
+                    .map_err(|e| e.to_string())
+                {
+                    Ok(token) => token,
+                    Err(e) => {
+                        let response = json!({
+                            "error": "Internal server error",
+                            "message": e,
+                        });
+                        return Ok(
+                            (StatusCode::INTERNAL_SERVER_ERROR, Json(response)).into_response()
+                        );
+                    }
+                };
+
+                let response = json!({
+                    "success": true,
+                    "user": usuario,
+                    "token": token,
+                    "user_id": payload.user_id,
+                });
+                Ok((StatusCode::OK, Json(response)).into_response())
+            }
+            Err(e) => {
+                let response = json!({
+                    "error": "Internal server error",
+                    "message": e,
+                });
+                Ok((StatusCode::INTERNAL_SERVER_ERROR, Json(response)).into_response())
+            }
+        },
         // Catch-all error.
         DbUserResult::Err(err_msg) => {
             let response = json!({

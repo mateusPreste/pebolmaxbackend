@@ -15,9 +15,9 @@ use axum::http::{
 use dotenv::dotenv;
 use modules::auth::auth_service::AuthService;
 use route::create_router;
+use tokio::sync::Mutex;
 use tower_http::cors::CorsLayer;
 
-use deadpool_postgres::{Config, Pool, Runtime};
 use tokio_postgres::{Client, Error, NoTls};
 
 pub struct AppState {
@@ -25,18 +25,16 @@ pub struct AppState {
     auth: AuthService,
 }
 
+pub trait InputValidation {
+    fn validate(&mut self) -> Result<(), String>;
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     dotenv().ok();
-
-    // jwt_secret is used to sign the JWT token
-    let jwt_secret = std::env::var("JWT_SECRET").expect("JWT_SECRET must be set");
-    let auth_service = AuthService::new(jwt_secret);
-
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-
     // Connect to the database with tokio_postgres
-    let (client, connection) = match tokio_postgres::connect(&database_url, NoTls).await {
+    let (mut client, connection) = match tokio_postgres::connect(&database_url, NoTls).await {
         Ok((client, connection)) => {
             println!("✅Connection to the database is successful!");
             (client, connection)
@@ -46,6 +44,10 @@ async fn main() -> Result<(), Error> {
             std::process::exit(1);
         }
     };
+
+    // jwt_secret is used to sign the JWT token
+    let jwt_secret = std::env::var("JWT_SECRET").expect("JWT_SECRET must be set");
+    let auth_service = AuthService::new(jwt_secret);
 
     // The connection object performs the actual communication with the database,
     // so spawn it off to run on its own
@@ -61,10 +63,11 @@ async fn main() -> Result<(), Error> {
         .allow_credentials(true)
         .allow_headers([AUTHORIZATION, ACCEPT, CONTENT_TYPE]);
 
-    let app = create_router(Arc::new(AppState {
+    let app = create_router(Arc::new(Mutex::new(AppState {
         db: client,
         auth: auth_service,
-    }))
+    })))
+    .expect("Failed to create router")
     .layer(cors);
 
     println!("🚀 Server started successfully");
