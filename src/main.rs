@@ -31,6 +31,7 @@ pub trait InputValidation {
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
+
     dotenv().ok();
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     // Connect to the database with tokio_postgres
