@@ -1,5 +1,6 @@
 use axum::async_trait;
 use serde::{Deserialize, Serialize};
+use strum_macros::Display;
 
 use super::auth_service::AuthService;
 
@@ -62,4 +63,13 @@ impl Credenciais {
             updated_at: row.get("updated_at"),
         }
     }
+}
+
+#[derive(Debug, Serialize, Deserialize, Display)]
+#[strum(serialize_all = "lowercase")]
+pub enum NivelNome {
+    #[serde(rename = "conta pix")]
+    ContaPix,
+    #[serde(rename = "full")]
+    Full,
 }

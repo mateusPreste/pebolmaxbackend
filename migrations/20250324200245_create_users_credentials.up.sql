@@ -23,3 +23,21 @@ CREATE TABLE credenciais (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 );
+
+-- Tabela de contas (Pix ou cartão) para pagamentos
+CREATE TABLE contas (
+    id SERIAL PRIMARY KEY,
+    identificador VARCHAR(255) NOT NULL, -- Chave PIX ou número do cartão (criptografado)
+    tipo VARCHAR(20) NOT NULL CHECK (tipo IN ('pix', 'cartao')) -- Tipo de conta
+);
+
+-- Tabela de relacionamento entre usuários e contas
+CREATE TABLE usuarios_contas (
+    usuario_id INT NOT NULL,
+    conta_id INT NOT NULL,
+    data_cadastro TIMESTAMP NOT NULL DEFAULT NOW(),
+    ativo BOOLEAN NOT NULL DEFAULT TRUE, -- Indica se a conta está ativa para o usuário
+    PRIMARY KEY (usuario_id, conta_id),
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    FOREIGN KEY (conta_id) REFERENCES contas(id) ON DELETE CASCADE
+);

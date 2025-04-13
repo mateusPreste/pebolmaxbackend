@@ -1,4 +1,4 @@
-use crate::modules::arenas::arenas_model::Local;
+use crate::modules::arenas::arenas_model::{Local, LocalInput};
 use regex::Regex;
 
 /// Trait que define a validação de código postal.

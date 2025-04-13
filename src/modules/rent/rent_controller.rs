@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tokio::sync::Mutex;
 
-use super::rent_service;
+use super::{rent_model::StatusReserva, rent_service};
 
 #[debug_handler]
 pub async fn register_reserva_controller(
@@ -40,7 +40,7 @@ pub async fn register_reserva_controller(
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UpdateStatusInput {
     pub reserva_id: i32,
-    pub new_status: String,
+    pub new_status: StatusReserva,
 }
 
 pub async fn update_reserva_status_controller(
@@ -65,5 +65,24 @@ pub async fn update_reserva_status_controller(
                 "message": err
             })),
         )),
+    }
+}
+
+#[debug_handler]
+pub async fn get_reserva_details_controller(
+    State(app_state): State<Arc<Mutex<AppState>>>,
+    Path(reserva_id): Path<i32>,
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let mut app_state = app_state.lock().await;
+    
+    match rent_service::get_reserva_details_service(&mut app_state.db, reserva_id).await {
+        Ok(detalhes) => Ok((StatusCode::OK, Json(detalhes)).into_response()),
+        Err(err) => {
+            let response = json!({
+                "error": "Unable to fetch reservation details",
+                "message": err
+            });
+            Err((StatusCode::INTERNAL_SERVER_ERROR, Json(response)))
+        }
     }
 }

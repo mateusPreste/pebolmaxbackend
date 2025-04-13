@@ -8,6 +8,43 @@ use super::validator::{
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct LocalInput {
+    pub id: Option<i32>,
+    pub nome: String,
+    pub rua: String,
+    pub numero: String,
+    pub complemento: Option<String>,
+    pub bairro: String,
+    pub cidade: String,
+    pub estado: String,
+    pub codigo_postal: String,
+    pub country: String,
+    pub latitude: f64,
+    pub longitude: f64,
+}
+
+impl InputValidation for LocalInput {
+    fn validate(&mut self) -> Result<(), String> {
+        let local = Local {
+            id: self.id,
+            nome: self.nome.clone(),
+            rua: self.rua.clone(),
+            numero: self.numero.clone(),
+            complemento: self.complemento.clone(),
+            bairro: self.bairro.clone(),
+            cidade: self.cidade.clone(),
+            estado: self.estado.clone(),
+            codigo_postal: self.codigo_postal.clone(),
+            country: self.country.clone(),
+            latitude: self.latitude,
+            longitude: self.longitude,
+            estabelecimento_id: None,
+        };
+        validate_local_code(&local)
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Local {
     pub id: Option<i32>,
     pub nome: String,
@@ -21,6 +58,7 @@ pub struct Local {
     pub country: String,
     pub latitude: f64,
     pub longitude: f64,
+    pub estabelecimento_id: Option<i32>,
 }
 
 impl InputValidation for Local {
@@ -36,7 +74,7 @@ pub struct Estabelecimento {
     pub tax_id: String,
     pub tipo: String, // deve ser "publico" ou "privado"
     pub pais: String,
-    pub locais: Vec<Local>,
+    pub locais: Vec<LocalInput>,
 }
 
 impl InputValidation for Estabelecimento {
@@ -57,6 +95,7 @@ impl InputValidation for Estabelecimento {
 // Exemplo de struct para Quadra.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Quadra {
+    pub id: Option<i32>,
     pub nome: String,
     // Supondo que cada quadra esteja associada a um local.
     pub photo_url: Option<String>,

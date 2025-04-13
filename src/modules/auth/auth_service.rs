@@ -5,7 +5,7 @@ use tokio_postgres::Client;
 
 use super::{
     auth_controller::UserData,
-    auth_model::{Credenciais, Usuario},
+    auth_model::{Credenciais, NivelNome, Usuario},
     auth_repository::{self, find_user_and_credentials_by_oauth},
     login_methods::login_strategy::{LoginParams, LoginResponse, LoginStrategyFactory},
 };
@@ -152,7 +152,7 @@ pub async fn create_new_user_and_credentials(
         updated_at: chrono::Utc::now(),
     };
 
-    auth_repository::create_new_user_and_credentials(
+    let (usuario, credenciais) = auth_repository::create_new_user_and_credentials(
         client,
         &user.nome,
         &user.cpf,
@@ -165,5 +165,29 @@ pub async fn create_new_user_and_credentials(
         credentials.oauth_provider_id.as_deref(),
         credentials.password_hash.as_deref(),
     )
-    .await
+    .await?;
+
+    // Get the 'full' role ID and assign it to the new user
+    let nivel_id = auth_repository::get_nivel_id_by_name(client, NivelNome::Full).await?;
+    assign_user_role(client, usuario.id, nivel_id).await?;
+
+    Ok((usuario, credenciais))
+}
+
+pub async fn assign_user_role(
+    client: &Client,
+    usuario_id: i32,
+    nivel_id: i32,
+) -> Result<(), String> {
+    auth_repository::add_user_role(client, usuario_id, nivel_id).await
+}
+
+pub async fn get_user_data(client: &Client, user_id: i32) -> Result<String, String> {
+    let query = "SELECT nome FROM usuarios WHERE id = $1";
+    let row = client
+        .query_one(query, &[&user_id])
+        .await
+        .map_err(|e| format!("Error fetching user data: {}", e))?;
+
+    Ok(row.get("nome"))
 }

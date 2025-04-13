@@ -87,7 +87,8 @@ pub struct UserData {
     pub oauth_provider: String,
     pub oauth_provider_id: String,
     pub login_method: String,
-    pub token: String,
+    pub access_token: String,
+    pub id_token: String,
     pub user_id: String,
 }
 #[debug_handler]
@@ -104,8 +105,9 @@ pub async fn register_user_controller(
             db,
             &payload.login_method,
             &LoginParams {
-                id_token: Some(payload.token.clone()),
+                access_token: Some(payload.access_token.clone()),
                 user_id: Some(payload.user_id.clone()),
+                id_token: Some(payload.id_token.clone()),
             },
         )
         .await;

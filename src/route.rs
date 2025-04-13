@@ -21,7 +21,8 @@ use crate::{
             arenas_model::{Estabelecimento, RegisterQuadraInput},
         },
         auth::auth_controller::{login_controller, register_user_controller},
-        rent::rent_controller::{register_reserva_controller, update_reserva_status_controller},
+        payments::payment_controller::{create_payment_controller, update_payment_status_controller},
+        rent::rent_controller::{register_reserva_controller, update_reserva_status_controller, get_reserva_details_controller},
     },
     AppState,
 };
@@ -44,10 +45,15 @@ pub fn create_router(app_state: Arc<Mutex<AppState>>) -> Result<Router, Error> {
     let rent_routes = Router::new()
         .route("/", post(register_reserva_controller))
         .route("/:id", patch(update_reserva_status_controller))
+        .route("/:id", get(get_reserva_details_controller))
         .route(
             "/available-time/:date/:quadra_id",
             get(list_free_times_controller),
         );
+
+    let payment_routes = Router::new()
+        .route("/", post(create_payment_controller))
+        .route("/:id/status", patch(update_payment_status_controller));
 
     /* let protected_routes = Router::new()
     .route("/notes", get(note_list_controller))
@@ -68,5 +74,6 @@ pub fn create_router(app_state: Arc<Mutex<AppState>>) -> Result<Router, Error> {
         .nest("/api", auth_routes)
         .nest("/api/arenas", arenas_routes)
         .nest("/api/rent", rent_routes)
+        .nest("/api/payments", payment_routes)
         .with_state(app_state))
 }

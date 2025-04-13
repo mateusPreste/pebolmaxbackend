@@ -1,19 +1,21 @@
 -- Tabela de papéis do sistema
-CREATE TABLE papeis (
+CREATE TABLE niveis (
     id SERIAL PRIMARY KEY,
-    nome VARCHAR(50) UNIQUE NOT NULL, -- 'jogador', 'arbitro', 'admin_estabelecimento', etc.
-    descricao TEXT NOT NULL,
-    permissoes JSONB -- Armazena permissões específicas em formato JSON
+    nome VARCHAR(50) UNIQUE NOT NULL, -- 'full', 'pix'.
+    descricao TEXT NOT NULL
 );
 
 -- Tabela de associação entre usuários e papéis
-CREATE TABLE usuario_papeis (
+CREATE TABLE usuario_niveis (
     usuario_id INT NOT NULL,
-    papel_id INT NOT NULL,
+    niveis_id INT NOT NULL,
     data_atribuicao TIMESTAMP NOT NULL DEFAULT NOW(),
-    situacao VARCHAR(20) NOT NULL DEFAULT 'Pendente' CHECK (situacao IN ('Pendente', 'Aprovado', 'Rejeitado')),
     ativo BOOLEAN NOT NULL DEFAULT TRUE,
-    PRIMARY KEY (usuario_id, papel_id),
+    PRIMARY KEY (usuario_id, niveis_id),
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
-    FOREIGN KEY (papel_id) REFERENCES papeis(id) ON DELETE CASCADE
+    FOREIGN KEY (niveis_id) REFERENCES niveis(id) ON DELETE CASCADE
 );
+
+INSERT INTO niveis (nome, descricao) VALUES ('full', 'acesso completo ao sistema');
+INSERT INTO niveis (nome, descricao) VALUES ('conta pix', 'acesso restrito'); 
+INSERT INTO niveis (nome, descricao) VALUES ('visitante', 'apenas acesso aos dados publicos'); 

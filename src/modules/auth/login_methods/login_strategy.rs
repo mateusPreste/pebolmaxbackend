@@ -10,10 +10,13 @@ use super::{
 #[derive(Serialize, Debug, Deserialize, Clone)]
 pub struct LoginParams {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub id_token: Option<String>,
+    pub access_token: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub user_id: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub id_token: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

@@ -1,6 +1,6 @@
 use tokio_postgres::{Client, Error};
 
-use super::auth_model::{Credenciais, Usuario};
+use super::auth_model::{Credenciais, Usuario, NivelNome};
 
 pub async fn find_user_and_credentials_by_oauth(
     client: &Client,
@@ -116,4 +116,40 @@ FROM new_usuario;
     };
 
     Ok(a.unwrap().unwrap())
+}
+
+pub async fn add_user_role(
+    client: &Client,
+    usuario_id: i32,
+    nivel_id: i32,
+) -> Result<(), String> {
+    let query = r#"
+        INSERT INTO usuario_niveis (usuario_id, niveis_id)
+        VALUES ($1, $2)
+    "#;
+
+    client
+        .execute(query, &[&usuario_id, &nivel_id])
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+pub async fn get_nivel_id_by_name(
+    client: &Client,
+    nome: NivelNome,
+) -> Result<i32, String> {
+    let query = r#"
+        SELECT id FROM niveis WHERE nome = $1
+    "#;
+
+    let nome_str = nome.to_string();
+
+    let row = client
+        .query_one(query, &[&nome_str])
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(row.get(0))
 }
