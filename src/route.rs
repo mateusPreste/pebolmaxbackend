@@ -1,17 +1,8 @@
-use axum::{ middleware, routing::{ delete, get, patch, post, MethodRouter }, Error, Router };
+use axum::{ routing::{ get, patch, post }, Error, Router };
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
 use crate::{
-    controller::note_controller::{
-        create_note_controller,
-        delete_note_controller,
-        edit_note_controller,
-        get_note_controller,
-        healthchecker_controller,
-        note_list_controller,
-    },
-    middleware::auth_middleware,
     modules::{
         arenas::{
             arenas_controller::{
@@ -21,9 +12,9 @@ use crate::{
                 list_free_times_controller,
                 register_estabelecimento_controller,
                 register_quadras_controller,
+                update_estabelecimento_controller,
             },
             arenas_model::{ Estabelecimento, RegisterQuadraInput },
-            arenas_service::get_estabelecimento,
         },
         auth::auth_controller::{ login_controller, register_user_controller },
         rent::rent_controller::{ register_reserva_controller, update_reserva_status_controller },
@@ -41,7 +32,9 @@ pub fn create_router(app_state: Arc<Mutex<AppState>>) -> Result<Router, Error> {
         .route("/estabelecimentos", get(get_all_estabelecimentos_handler)) // Adicionando a nova rota
         .route(
             "/estabelecimentos/:id",
-            get(get_estabelecimento_controller).delete(delete_estabelecimento_controller)
+            get(get_estabelecimento_controller)
+                .delete(delete_estabelecimento_controller)
+                .patch(update_estabelecimento_controller)
         )
         .route("/venue", post(register_quadras_controller::<RegisterQuadraInput>));
 

@@ -209,6 +209,46 @@ pub async fn delete_estabelecimento_by_id(client: &Client, id: i32) -> Result<()
     }
 }
 
+pub async fn update_estabelecimento(
+    client: &Client,
+    id: i32,
+    estabelecimento: Estabelecimento
+) -> Result<Estabelecimento, String> {
+    println!("Atualizando estabelecimento com ID: {}", id);
+
+    let query =
+        "
+        UPDATE estabelecimentos
+        SET nome = $1, tax_id = $2, tipo = $3, pais = $4
+        WHERE id = $5
+    ";
+
+    match client.execute(
+        query,
+        &[
+            &estabelecimento.nome,
+            &estabelecimento.tax_id,
+            &estabelecimento.tipo,
+            &estabelecimento.pais,
+            &id,
+        ]
+    ).await {
+        Ok(rows_affected) => {
+            if rows_affected == 0 {
+                println!("Nenhum estabelecimento encontrado para o ID: {}", id);
+                Err(format!("Nenhum estabelecimento encontrado para o ID: {}", id))
+            } else {
+                println!("Estabelecimento com ID {} atualizado com sucesso.", id);
+                Ok(estabelecimento)
+            }
+        }
+        Err(err) => {
+            println!("Erro ao atualizar estabelecimento: {}", err);
+            Err(format!("Erro ao atualizar estabelecimento: {}", err))
+        }
+    }
+}
+
 /// Registra uma nova quadra e insere seus horários em uma única transação.
 /// Se qualquer inserção falhar, toda a operação é revertida.
 ///

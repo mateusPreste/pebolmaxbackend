@@ -1,12 +1,11 @@
 use std::sync::Arc;
 
-use crate::{ modules::arenas::arenas_model::Estabelecimento, AppState, InputValidation };
-use axum::{ extract::{ Path, State }, http::StatusCode, response::IntoResponse, Extension, Json };
+use crate::{ modules::arenas::{arenas_model::Estabelecimento, arenas_service::update_estabelecimento_service}, AppState, InputValidation };
+use axum::{ extract::{ Path, State }, http::StatusCode, response::IntoResponse, Json };
 use chrono::NaiveDate;
 use serde::de::DeserializeOwned;
 use serde_json::json;
 use tokio::sync::Mutex;
-use tokio_postgres::Client;
 
 use super::{
     arenas_model::RegisterQuadraInput,
@@ -105,6 +104,42 @@ pub async fn delete_estabelecimento_controller(
             )),
     }
 }
+
+pub async fn update_estabelecimento_controller(
+    Path(id): Path<i32>,
+    State(app_state): State<Arc<Mutex<AppState>>>,
+    Json(payload): Json<Estabelecimento>
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    println!("Atualizando estabelecimento com ID: {}", id);
+
+    let mut state = app_state.lock().await;
+    let db = &mut state.db;
+
+    match update_estabelecimento_service(db, id, payload).await {
+        Ok(_) =>
+            Ok((
+                StatusCode::OK,
+                Json(
+                    json!({
+            "message": "Estabelecimento atualizado com sucesso"
+        })
+                ),
+            )),
+        Err(err) => {
+            println!("Erro ao atualizar estabelecimento: {}", err);
+            Err((
+                StatusCode::NOT_FOUND,
+                Json(
+                    json!({
+                    "error": "Not Found",
+                    "message": err
+                })
+                ),
+            ))
+        }
+    }
+}
+
 
 //get estabelecimento controller
 pub async fn get_estabelecimento_controller(
@@ -214,3 +249,4 @@ pub async fn list_free_times_controller(
 
     Ok((StatusCode::OK, Json(free_intervals)).into_response())
 }
+

@@ -11,7 +11,7 @@ use super::{
         delete_estabelecimento_by_id,
         find_all_estabelecimentos,
         find_estabelecimento_by_id,
-        list_free_times,
+        list_free_times, update_estabelecimento,
     },
 };
 
@@ -50,4 +50,12 @@ pub async fn get_available_hours(
     date: NaiveDate
 ) -> Result<Vec<(NaiveTime, NaiveTime)>, String> {
     list_free_times(client, quadra_id, date).await.map_err(|e| e.to_string())
+}
+
+pub async fn update_estabelecimento_service(
+    client: &tokio_postgres::Client,
+    id: i32,
+    estabelecimento: Estabelecimento
+) -> Result<Estabelecimento, String> {
+    update_estabelecimento(client, id, estabelecimento).await
 }
