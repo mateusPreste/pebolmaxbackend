@@ -1,27 +1,27 @@
-use axum::{
-    middleware,
-    routing::{delete, get, patch, post, MethodRouter},
-    Error, Router,
-};
+use axum::{ middleware, routing::{ delete, get, patch, post, MethodRouter }, Error, Router };
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
 use crate::{
     controller::note_controller::{
-        create_note_controller, delete_note_controller, edit_note_controller, get_note_controller,
-        healthchecker_controller, note_list_controller,
+        create_note_controller,
+        delete_note_controller,
+        edit_note_controller,
+        get_note_controller,
+        healthchecker_controller,
+        note_list_controller,
     },
     middleware::auth_middleware,
     modules::{
         arenas::{
             arenas_controller::{
-                list_free_times_controller, register_estabelecimento_controller,
-                register_quadras_controller,
+                get_all_estabelecimentos_handler, get_estabelecimento_controller, list_free_times_controller, register_estabelecimento_controller, register_quadras_controller
             },
-            arenas_model::{Estabelecimento, RegisterQuadraInput},
+            arenas_model::{ Estabelecimento, RegisterQuadraInput },
+            arenas_service::get_estabelecimento,
         },
-        auth::auth_controller::{login_controller, register_user_controller},
-        rent::rent_controller::{register_reserva_controller, update_reserva_status_controller},
+        auth::auth_controller::{ login_controller, register_user_controller },
+        rent::rent_controller::{ register_reserva_controller, update_reserva_status_controller },
     },
     AppState,
 };
@@ -32,22 +32,15 @@ pub fn create_router(app_state: Arc<Mutex<AppState>>) -> Result<Router, Error> {
         .route("/auth/register", post(register_user_controller));
 
     let arenas_routes = Router::new()
-        .route(
-            "/organization",
-            post(register_estabelecimento_controller::<Estabelecimento>),
-        )
-        .route(
-            "/venue",
-            post(register_quadras_controller::<RegisterQuadraInput>),
-        );
+        .route("/organization", post(register_estabelecimento_controller::<Estabelecimento>))
+        .route("/estabelecimentos", get(get_all_estabelecimentos_handler)) // Adicionando a nova rota
+        .route("/estabelecimentos/:cnpj", get(get_estabelecimento_controller))
+        .route("/venue", post(register_quadras_controller::<RegisterQuadraInput>));
 
     let rent_routes = Router::new()
         .route("/", post(register_reserva_controller))
         .route("/:id", patch(update_reserva_status_controller))
-        .route(
-            "/available-time/:date/:quadra_id",
-            get(list_free_times_controller),
-        );
+        .route("/available-time/:date/:quadra_id", get(list_free_times_controller));
 
     /* let protected_routes = Router::new()
     .route("/notes", get(note_list_controller))
@@ -64,9 +57,11 @@ pub fn create_router(app_state: Arc<Mutex<AppState>>) -> Result<Router, Error> {
         auth_middleware,
     )); */
 
-    Ok(Router::new()
-        .nest("/api", auth_routes)
-        .nest("/api/arenas", arenas_routes)
-        .nest("/api/rent", rent_routes)
-        .with_state(app_state))
+    Ok(
+        Router::new()
+            .nest("/api", auth_routes)
+            .nest("/api/arenas", arenas_routes)
+            .nest("/api/rent", rent_routes)
+            .with_state(app_state)
+    )
 }
