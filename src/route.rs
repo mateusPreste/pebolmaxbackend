@@ -15,7 +15,12 @@ use crate::{
     modules::{
         arenas::{
             arenas_controller::{
-                get_all_estabelecimentos_handler, get_estabelecimento_controller, list_free_times_controller, register_estabelecimento_controller, register_quadras_controller
+                delete_estabelecimento_controller,
+                get_all_estabelecimentos_handler,
+                get_estabelecimento_controller,
+                list_free_times_controller,
+                register_estabelecimento_controller,
+                register_quadras_controller,
             },
             arenas_model::{ Estabelecimento, RegisterQuadraInput },
             arenas_service::get_estabelecimento,
@@ -34,7 +39,10 @@ pub fn create_router(app_state: Arc<Mutex<AppState>>) -> Result<Router, Error> {
     let arenas_routes = Router::new()
         .route("/organization", post(register_estabelecimento_controller::<Estabelecimento>))
         .route("/estabelecimentos", get(get_all_estabelecimentos_handler)) // Adicionando a nova rota
-        .route("/estabelecimentos/:cnpj", get(get_estabelecimento_controller))
+        .route(
+            "/estabelecimentos/:id",
+            get(get_estabelecimento_controller).delete(delete_estabelecimento_controller)
+        )
         .route("/venue", post(register_quadras_controller::<RegisterQuadraInput>));
 
     let rent_routes = Router::new()

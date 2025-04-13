@@ -1,8 +1,8 @@
 use chrono::{ Datelike, NaiveDate, NaiveDateTime, NaiveTime };
 use rust_decimal::{ prelude::{ FromPrimitive, ToPrimitive }, Decimal };
-use tokio_postgres::{ row, Client, Error };
+use tokio_postgres::{ Client, Error };
 
-use crate::modules::arenas::{arenas_model::Local, validator::estabelecimento_validator};
+use crate::modules::arenas::arenas_model::Local;
 
 use super::arenas_model::{ Estabelecimento, Horario, Quadra };
 
@@ -70,12 +70,13 @@ pub async fn create_estabelecimento(
 //search in the db the database where the id was request
 pub async fn find_estabelecimento_by_id(
     client: &tokio_postgres::Client,
-    id: i32,
+    id: i32
 ) -> Result<Option<Estabelecimento>, String> {
     println!("Buscando estabelecimento com ID: {}", id);
 
     // Query para buscar o estabelecimento pelo ID
-    let query = "
+    let query =
+        "
         SELECT id, nome, tax_id, tipo, pais 
         FROM estabelecimentos 
         WHERE id = $1
@@ -86,14 +87,14 @@ pub async fn find_estabelecimento_by_id(
             let estabelecimento_id: i32 = row.get("id");
 
             // Buscar locais associados ao estabelecimento
-            let locais_query = "
+            let locais_query =
+                "
                 SELECT id, nome, rua, numero, complemento, bairro, cidade, estado, codigo_postal, country, latitude, longitude 
                 FROM locais 
                 WHERE estabelecimento_id = $1
             ";
             let locais_rows = client
-                .query(locais_query, &[&estabelecimento_id])
-                .await
+                .query(locais_query, &[&estabelecimento_id]).await
                 .map_err(|e| format!("Erro ao buscar locais: {}", e))?;
 
             let locais = locais_rows
@@ -120,7 +121,7 @@ pub async fn find_estabelecimento_by_id(
                 tax_id: row.get("tax_id"),
                 tipo: row.get("tipo"),
                 pais: row.get("pais"),
-                locais, 
+                locais,
             };
 
             Ok(Some(estabelecimento))
@@ -185,6 +186,29 @@ pub async fn find_all_estabelecimentos(client: &Client) -> Result<Vec<Estabeleci
 
     Ok(estabelecimentos)
 }
+
+pub async fn delete_estabelecimento_by_id(client: &Client, id: i32) -> Result<(), String> {
+    println!("Deletando estabelecimento com ID: {}", id);
+
+    let query = "DELETE FROM estabelecimentos WHERE id = $1";
+
+    match client.execute(query, &[&id]).await {
+        Ok(rows_affected) => {
+            if rows_affected == 0 {
+                println!("Nenhum estabelecimento encontrado para o ID: {}", id);
+                Err(format!("Nenhum estabelecimento encontrado para o ID: {}", id))
+            } else {
+                println!("Estabelecimento com ID {} deletado com sucesso.", id);
+                Ok(())
+            }
+        }
+        Err(_err) => {
+            println!("Erro ao deletar estabelecimento: {}", _err);
+            Err(format!("Erro ao deletar estabelecimento: {}", _err))
+        }
+    }
+}
+
 /// Registra uma nova quadra e insere seus horários em uma única transação.
 /// Se qualquer inserção falhar, toda a operação é revertida.
 ///

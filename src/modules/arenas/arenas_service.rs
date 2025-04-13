@@ -1,13 +1,17 @@
 use chrono::{ NaiveDate, NaiveTime };
-use serde::{ Deserialize, Serialize };
 use tokio_postgres::{ Client, Error };
 
 use crate::modules::arenas::arenas_model::Estabelecimento;
 
 use super::{
-    arenas_model::{ Horario, Quadra, RegisterQuadraInput },
+    arenas_model::{ Quadra, RegisterQuadraInput },
     arenas_repository::{
-        self, create_estabelecimento, create_quadra, find_all_estabelecimentos, find_estabelecimento_by_id, list_free_times
+        create_estabelecimento,
+        create_quadra,
+        delete_estabelecimento_by_id,
+        find_all_estabelecimentos,
+        find_estabelecimento_by_id,
+        list_free_times,
     },
 };
 
@@ -27,6 +31,10 @@ pub async fn get_estabelecimento(
 
 pub async fn get_all_estabelecimentos(client: &mut Client) -> Result<Vec<Estabelecimento>, String> {
     find_all_estabelecimentos(client).await
+}
+
+pub async fn delete_estabelecimento(client: &mut Client, id: i32) -> Result<(), String> {
+    delete_estabelecimento_by_id(client, id).await
 }
 
 pub async fn register_quadra(

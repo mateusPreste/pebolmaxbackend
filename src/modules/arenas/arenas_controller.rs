@@ -11,7 +11,11 @@ use tokio_postgres::Client;
 use super::{
     arenas_model::RegisterQuadraInput,
     arenas_service::{
-        self, get_available_hours, get_estabelecimento, register_estabelecimento, register_quadra
+        self,
+        get_available_hours,
+        get_estabelecimento,
+        register_estabelecimento,
+        register_quadra,
     },
 };
 
@@ -48,10 +52,12 @@ pub async fn register_estabelecimento_controller<T>(
     }
 }
 
-
-pub async fn get_all_estabelecimentos_handler(
-    State(app_state): State<Arc<Mutex<AppState>>>,
-) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+pub async fn get_all_estabelecimentos_handler(State(
+    app_state,
+): State<Arc<Mutex<AppState>>>) -> Result<
+    impl IntoResponse,
+    (StatusCode, Json<serde_json::Value>)
+> {
     // Lock no estado compartilhado para acessar o cliente do banco de dados
     let mut state = app_state.lock().await;
     let db = &mut state.db;
@@ -67,49 +73,76 @@ pub async fn get_all_estabelecimentos_handler(
             println!("Erro ao buscar estabelecimentos: {}", err);
             Err((
                 StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({
+                Json(
+                    json!({
                     "error": "Internal server error",
                     "message": err
-                })),
+                })
+                ),
             ))
         }
     }
 }
 
+pub async fn delete_estabelecimento_controller(
+    Path(id): Path<i32>,
+    State(app_state): State<Arc<Mutex<AppState>>>
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let mut state = app_state.lock().await;
+    let db = &mut state.db;
+
+    match arenas_service::delete_estabelecimento(db, id).await {
+        Ok(_) => Ok((StatusCode::NO_CONTENT, ())),
+        Err(err) =>
+            Err((
+                StatusCode::NOT_FOUND,
+                Json(
+                    json!({
+                "error": "Not Found",
+                "message": err
+            })
+                ),
+            )),
+    }
+}
 
 //get estabelecimento controller
 pub async fn get_estabelecimento_controller(
     State(app_state): State<Arc<Mutex<AppState>>>,
-    Path(id): Path<i32>,
+    Path(id): Path<i32>
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    println!("id recebido no controlador: {}", id); 
+    println!("id recebido no controlador: {}", id);
 
     let mut state = app_state.lock().await;
     let db = &mut state.db;
 
     match get_estabelecimento(db, id).await {
         Ok(Some(estabelecimento)) => {
-            println!("Estabelecimento encontrado: {:?}", estabelecimento); 
+            println!("Estabelecimento encontrado: {:?}", estabelecimento);
             Ok((StatusCode::OK, Json(estabelecimento)))
         }
         Ok(None) => {
             println!("Estabelecimento não encontrado para o id: {}", id);
             Err((
                 StatusCode::NOT_FOUND,
-                Json(json!({
+                Json(
+                    json!({
                     "erro": "Not found",
                     "message": "Estabelecimento não encontrado"
-                })),
+                })
+                ),
             ))
         }
         Err(err) => {
-            println!("Erro ao buscar estabelecimento: {}", err); 
+            println!("Erro ao buscar estabelecimento: {}", err);
             Err((
                 StatusCode::INTERNAL_SERVER_ERROR,
-                Json(json!({
+                Json(
+                    json!({
                     "error": "Internal Server Error",
                     "message": err
-                })),
+                })
+                ),
             ))
         }
     }
