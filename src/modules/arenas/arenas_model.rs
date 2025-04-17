@@ -1,4 +1,5 @@
 use chrono::NaiveTime;
+use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 
 use crate::InputValidation;
@@ -19,8 +20,8 @@ pub struct Local {
     pub estado: String,
     pub codigo_postal: String,
     pub country: String,
-    pub latitude: f64,
-    pub longitude: f64,
+    pub latitude: Decimal,
+    pub longitude: Decimal,
 }
 
 impl InputValidation for Local {

@@ -4,14 +4,17 @@ use tokio_postgres::{ Client, Error };
 use crate::modules::arenas::arenas_model::Estabelecimento;
 
 use super::{
-    arenas_model::{ Quadra, RegisterQuadraInput },
+    arenas_model::{ Local, Quadra, RegisterQuadraInput },
     arenas_repository::{
         create_estabelecimento,
         create_quadra,
         delete_estabelecimento_by_id,
         find_all_estabelecimentos,
         find_estabelecimento_by_id,
-        list_free_times, update_estabelecimento,
+        find_locais_by_estabelecimento_id,
+        find_local_by_id,
+        list_free_times,
+        update_estabelecimento,
     },
 };
 
@@ -58,4 +61,19 @@ pub async fn update_estabelecimento_service(
     estabelecimento: Estabelecimento
 ) -> Result<Estabelecimento, String> {
     update_estabelecimento(client, id, estabelecimento).await
+}
+
+pub async fn get_locais_by_estabelecimento_id_service(
+    client: &tokio_postgres::Client,
+    estabelecimento_id: i32
+) -> Result<Vec<Local>, String> {
+    find_locais_by_estabelecimento_id(client, estabelecimento_id).await
+}
+
+//retorna um local especifico pelo seu id
+pub async fn get_local_by_id_service(
+    client: &tokio_postgres::Client,
+    local_id: i32
+) -> Result<Option<Local>, String> {
+    find_local_by_id(client, local_id).await
 }

@@ -32,12 +32,8 @@ pub async fn create_estabelecimento(
         "INSERT INTO locais (nome, rua, numero, complemento, bairro, cidade, estado, codigo_postal, country, latitude, longitude, estabelecimento_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id";
 
     for local in est.locais.iter_mut() {
-        let latitude = Decimal::from_f64(local.latitude).ok_or(
-            "Failed to convert latitude to Decimal"
-        )?;
-        let longitude = Decimal::from_f64(local.longitude).ok_or(
-            "Failed to convert longitude to Decimal"
-        )?;
+        let latitude = local.latitude;
+        let longitude = local.longitude;
 
         let row = transaction
             .query_one(
@@ -110,8 +106,8 @@ pub async fn find_estabelecimento_by_id(
                     estado: local_row.get("estado"),
                     codigo_postal: local_row.get("codigo_postal"),
                     country: local_row.get("country"),
-                    latitude: local_row.get::<_, Decimal>("latitude").to_f64().unwrap_or(0.0),
-                    longitude: local_row.get::<_, Decimal>("longitude").to_f64().unwrap_or(0.0),
+                    latitude: local_row.get::<_, Decimal>("latitude"), // Mantém o valor como Decimal
+                    longitude: local_row.get::<_, Decimal>("longitude"), // Conversão explícita para f64
                 })
                 .collect();
 
@@ -169,8 +165,8 @@ pub async fn find_all_estabelecimentos(client: &Client) -> Result<Vec<Estabeleci
                 estado: local_row.get("estado"),
                 codigo_postal: local_row.get("codigo_postal"),
                 country: local_row.get("country"),
-                latitude: local_row.get::<_, Decimal>("latitude").to_f64().unwrap_or(0.0), // Conversão explícita para f64
-                longitude: local_row.get::<_, Decimal>("longitude").to_f64().unwrap_or(0.0), // Conversão explícita para f64
+                latitude: local_row.get::<_, Decimal>("latitude"), // Mantém o valor como Decimal
+                longitude: local_row.get::<_, Decimal>("longitude"), // Conversão explícita para f64
             })
             .collect();
 
@@ -223,16 +219,18 @@ pub async fn update_estabelecimento(
         WHERE id = $5
     ";
 
-    match client.execute(
-        query,
-        &[
-            &estabelecimento.nome,
-            &estabelecimento.tax_id,
-            &estabelecimento.tipo,
-            &estabelecimento.pais,
-            &id,
-        ]
-    ).await {
+    match
+        client.execute(
+            query,
+            &[
+                &estabelecimento.nome,
+                &estabelecimento.tax_id,
+                &estabelecimento.tipo,
+                &estabelecimento.pais,
+                &id,
+            ]
+        ).await
+    {
         Ok(rows_affected) => {
             if rows_affected == 0 {
                 println!("Nenhum estabelecimento encontrado para o ID: {}", id);
@@ -245,6 +243,144 @@ pub async fn update_estabelecimento(
         Err(err) => {
             println!("Erro ao atualizar estabelecimento: {}", err);
             Err(format!("Erro ao atualizar estabelecimento: {}", err))
+        }
+    }
+}
+
+pub async fn find_locais_by_estabelecimento_id(
+    client: &tokio_postgres::Client,
+    estabelecimento_id: i32
+) -> Result<Vec<Local>, String> {
+    println!("Buscando locais para o estabelecimento com ID: {}", estabelecimento_id);
+
+    let query =
+        "
+        SELECT id, nome, rua, numero, complemento, bairro, cidade, estado, codigo_postal, country, latitude, longitude
+        FROM locais
+        WHERE estabelecimento_id = $1
+    ";
+
+    match client.query(query, &[&estabelecimento_id]).await {
+        Ok(rows) => {
+            let locais = rows
+                .into_iter()
+                .map(|row| Local {
+                    id: Some(row.get("id")),
+                    nome: row.get("nome"),
+                    rua: row.get("rua"),
+                    numero: row.get("numero"),
+                    complemento: row.get("complemento"),
+                    bairro: row.get("bairro"),
+                    cidade: row.get("cidade"),
+                    estado: row.get("estado"),
+                    codigo_postal: row.get("codigo_postal"),
+                    country: row.get("country"),
+                    latitude: row.get::<_, Decimal>("latitude"),
+                    longitude: row.get::<_, Decimal>("longitude"),
+                })
+                .collect();
+
+            Ok(locais)
+        }
+        Err(err) => {
+            println!("Erro ao buscar locais: {}", err);
+            Err(format!("Erro ao buscar locais: {}", err))
+        }
+    }
+}
+
+pub async fn find_local_by_id(client: &Client, local_id: i32) -> Result<Option<Local>, String> {
+    println!("Buscando local com ID: {}", local_id);
+
+    let query =
+        "
+        SELECT id, nome, rua, numero, complemento, bairro, cidade, estado, codigo_postal, country, latitude, longitude
+        FROM locais
+        WHERE id = $1
+    ";
+
+    match client.query_opt(query, &[&local_id]).await {
+        Ok(Some(row)) => {
+            let local = Local {
+                id: Some(row.get("id")),
+                nome: row.get("nome"),
+                rua: row.get("rua"),
+                numero: row.get("numero"),
+                complemento: row.get("complemento"),
+                bairro: row.get("bairro"),
+                cidade: row.get("cidade"),
+                estado: row.get("estado"),
+                codigo_postal: row.get("codigo_postal"),
+                country: row.get("country"),
+
+                latitude: row.get::<_, Decimal>("latitude"),
+                longitude: row.get::<_, Decimal>("longitude"),
+            };
+
+            Ok(Some(local))
+        }
+        Ok(None) => {
+            println!("Nenhum local encontrado com o ID: {}", local_id);
+            Ok(None)
+        }
+        Err(err) => {
+            println!("Erro ao buscar local: {}", err);
+            Err(format!("Erro ao buscar local: {}", err))
+        }
+    }
+}
+
+pub async fn update_local(client: &Client, local_id: i32, local: Local) -> Result<Local, String> {
+    println!("Atualizando local com ID: {}", local_id);
+
+    let query =
+        "
+    UPDATE locais
+    SET nome = $1, rua = $2, numero = $3, complemento = $4, bairro = $5, cidade = $6, estado = $7, codigo_postal = $8, country = $9, latitude = $10, longitude = $11
+    WHERE id = $12
+";
+
+    // let latitude = Decimal::from_f64(local.latitude).ok_or(
+    //     "Falha ao converter latitude para Decimal"
+    // )?;
+    // let longitude = Decimal::from_f64(local.longitude).ok_or(
+    //     "Falha ao converter longitude para Decimal"
+    // )?;
+    match
+        client.execute(
+            query,
+            &[
+                &local.nome,
+                &local.rua,
+                &local.numero,
+                &local.complemento,
+                &local.bairro,
+                &local.cidade,
+                &local.estado,
+                &local.codigo_postal,
+                &local.country,
+                &local.latitude,
+                &local.longitude,
+                &local_id,
+            ]
+        ).await
+    {
+        Ok(rows_affected) => {
+            if rows_affected == 0 {
+                println!("Nenhum local encontrado para o ID: {}", local_id);
+                Err(format!("Nenhum local encontrado para o ID: {}", local_id))
+            } else {
+                println!("Local com ID {} atualizado com sucesso.", local_id);
+
+                match find_local_by_id(client, local_id).await? {
+                    Some(local) => Ok(local),
+                    None => Err(format!("Local with ID {} not found", local_id)),
+                }
+            }
+        }
+        Err(err) => {
+            println!("Erro ao atualizar local: {}", err);
+            Err(format!("Erro ao atualizar local: {}", err))
         }
     }
 }
