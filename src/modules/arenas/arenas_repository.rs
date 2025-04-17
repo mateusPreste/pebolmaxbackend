@@ -171,7 +171,7 @@ pub async fn find_all_estabelecimentos(client: &Client) -> Result<Vec<Estabeleci
             })
             .collect();
 
-        // coloca 
+        // coloca
         estabelecimentos.push(Estabelecimento {
             id: Some(estabelecimento_id),
             nome: row.get("nome"),
@@ -179,7 +179,6 @@ pub async fn find_all_estabelecimentos(client: &Client) -> Result<Vec<Estabeleci
             tipo: row.get("tipo"),
             pais: row.get("pais"),
             locais,
-            
         });
     }
 
@@ -204,6 +203,28 @@ pub async fn delete_estabelecimento_by_id(client: &Client, id: i32) -> Result<()
         Err(_err) => {
             println!("Erro ao deletar estabelecimento: {}", _err);
             Err(format!("Erro ao deletar estabelecimento: {}", _err))
+        }
+    }
+}
+
+pub async fn delete_local_by_id(client: &Client, id: i32) -> Result<(), String> {
+    println!("Deletando local com ID: {}", id);
+
+    let query = "DELETE FROM locais WHERE id = $1";
+
+    match client.execute(query, &[&id]).await {
+        Ok(rows_affected) => {
+            if rows_affected == 0 {
+                println!("Nenhum locais encontrado para o ID: {}", id);
+                Err(format!("Nenhum locais encontrado para o ID: {}", id))
+            } else {
+                println!("Local com ID {} deletado com sucesso.", id);
+                Ok(())
+            }
+        }
+        Err(_err) => {
+            println!("Erro ao deletar local: {}", _err);
+            Err(format!("Erro ao deletar local: {}", _err))
         }
     }
 }

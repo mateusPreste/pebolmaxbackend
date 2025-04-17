@@ -7,6 +7,7 @@ use crate::{
         arenas::{
             arenas_controller::{
                 delete_estabelecimento_controller,
+                delete_local_controller,
                 get_all_estabelecimentos_handler,
                 get_estabelecimento_controller,
                 get_locais_controller,
@@ -39,7 +40,12 @@ pub fn create_router(app_state: Arc<Mutex<AppState>>) -> Result<Router, Error> {
                 .patch(update_estabelecimento_controller)
         )
         .route("/venue", post(register_quadras_controller::<RegisterQuadraInput>))
-        .route("/locais/:id", get(get_locais_controller).patch(update_locais_controller));
+        .route(
+            "/locais/:id",
+            get(get_locais_controller)
+                .patch(update_locais_controller)
+                .delete(delete_local_controller)
+        );
 
     let rent_routes = Router::new()
         .route("/", post(register_reserva_controller))

@@ -18,6 +18,7 @@ use super::{
     arenas_model::{ Local, RegisterQuadraInput },
     arenas_service::{
         self,
+        delete_local_service,
         get_available_hours,
         get_estabelecimento,
         get_local_by_id_service,
@@ -291,6 +292,28 @@ pub async fn update_locais_controller(
                     "error": "Internal Server Error",
                     "message": err
                 })
+                ),
+            )),
+    }
+}
+
+pub async fn delete_local_controller(
+    Path(id): Path<i32>,
+    State(app_state): State<Arc<Mutex<AppState>>>
+) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
+    let mut state = app_state.lock().await;
+    let db = &mut state.db;
+
+    match delete_local_service(db, id).await {
+        Ok(_) => Ok((StatusCode::NO_CONTENT, ())),
+        Err(err) =>
+            Err((
+                StatusCode::NOT_FOUND,
+                Json(
+                    json!({
+                "error": "Not Found",
+                "message": err
+            })
                 ),
             )),
     }
