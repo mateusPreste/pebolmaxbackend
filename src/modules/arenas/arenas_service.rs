@@ -14,7 +14,7 @@ use super::{
         find_locais_by_estabelecimento_id,
         find_local_by_id,
         list_free_times,
-        update_estabelecimento,
+        update_estabelecimento, update_local,
     },
 };
 
@@ -76,4 +76,13 @@ pub async fn get_local_by_id_service(
     local_id: i32
 ) -> Result<Option<Local>, String> {
     find_local_by_id(client, local_id).await
+    
+}
+
+pub async fn update_local_service(
+    client: &mut Client,
+    local_id: i32,
+    local: Local
+) -> Result<Local, String> {
+    update_local(client, local_id, local).await
 }

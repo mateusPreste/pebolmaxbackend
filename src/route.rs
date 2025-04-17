@@ -14,6 +14,7 @@ use crate::{
                 register_estabelecimento_controller,
                 register_quadras_controller,
                 update_estabelecimento_controller,
+                update_locais_controller,
             },
             arenas_model::{ Estabelecimento, RegisterQuadraInput },
         },
@@ -38,7 +39,7 @@ pub fn create_router(app_state: Arc<Mutex<AppState>>) -> Result<Router, Error> {
                 .patch(update_estabelecimento_controller)
         )
         .route("/venue", post(register_quadras_controller::<RegisterQuadraInput>))
-        .route("/locais/:id", get(get_locais_controller));
+        .route("/locais/:id", get(get_locais_controller).patch(update_locais_controller));
 
     let rent_routes = Router::new()
         .route("/", post(register_reserva_controller))

@@ -140,6 +140,7 @@ pub async fn find_all_estabelecimentos(client: &Client) -> Result<Vec<Estabeleci
         .query(estabelecimentos_query, &[]).await
         .map_err(|e| format!("Erro ao buscar estabelecimentos: {}", e))?;
 
+    //vector to show the estabelecimentos we fiiind
     let mut estabelecimentos = Vec::new();
 
     for row in estabelecimentos_rows {
@@ -170,13 +171,15 @@ pub async fn find_all_estabelecimentos(client: &Client) -> Result<Vec<Estabeleci
             })
             .collect();
 
+        // coloca 
         estabelecimentos.push(Estabelecimento {
             id: Some(estabelecimento_id),
             nome: row.get("nome"),
             tax_id: row.get("tax_id"),
             tipo: row.get("tipo"),
             pais: row.get("pais"),
-            locais, // Preenche o campo locais
+            locais,
+            
         });
     }
 
