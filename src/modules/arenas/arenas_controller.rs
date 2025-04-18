@@ -191,6 +191,8 @@ pub async fn get_estabelecimento_controller(
     }
 }
 
+/// ---------------------------------    QUADRAS -------------------------------------------------------------
+
 pub async fn register_quadras_controller<T>(
     State(service): State<Arc<Mutex<AppState>>>,
     Json(mut payload): Json<T>
@@ -224,6 +226,8 @@ pub async fn register_quadras_controller<T>(
     }
 }
 
+
+/// -------------------------------------------  LOCAIS -------------------------------------------------------------
 pub async fn get_locais_controller(
     Path(id): Path<i32>,
     State(app_state): State<Arc<Mutex<AppState>>>
@@ -318,6 +322,8 @@ pub async fn delete_local_controller(
             )),
     }
 }
+
+
 
 pub async fn list_free_times_controller(
     State(app_state): State<Arc<Mutex<AppState>>>,

@@ -1,10 +1,33 @@
 use chrono::{ Datelike, NaiveDate, NaiveDateTime, NaiveTime };
 use rust_decimal::{ prelude::{ FromPrimitive, ToPrimitive }, Decimal };
-use tokio_postgres::{ Client, Error };
+use tokio_postgres::{ Client, Error, Row };
 
-use crate::modules::arenas::arenas_model::Local;
+// Removido: use crate::modules::arenas::arenas_model::Local;
+// Adicionado AsyncTryFromRow
+use super::arenas_model::{ AsyncTryFromRow, Estabelecimento, Horario, Local, Quadra };
 
-use super::arenas_model::{ Estabelecimento, Horario, Quadra };
+/// Busca quadras associadas a um local_id.
+// Esta função agora é pública pois é usada pela implementação da trait em arenas_model.rs
+pub async fn find_quadras_by_local_id(
+    client: &tokio_postgres::Client,
+    local_id: i32
+) -> Result<Vec<Quadra>, String> {
+    let quadras_query = "SELECT id, nome, local_id, photo_url FROM quadras WHERE local_id = $1";
+    let quadras_rows = client
+        .query(quadras_query, &[&local_id]).await
+        .map_err(|e| format!("Erro ao buscar quadras para o local {}: {}", local_id, e))?;
+
+    let quadras = quadras_rows
+        .into_iter()
+        .map(|quadra_row| Quadra {
+            id: Some(quadra_row.get("id")),
+            nome: quadra_row.get("nome"),
+            local_id: quadra_row.get("local_id"),
+            photo_url: quadra_row.get("photo_url"),
+        })
+        .collect();
+    Ok(quadras)
+}
 
 pub async fn create_estabelecimento(
     client: &mut Client,
@@ -93,23 +116,13 @@ pub async fn find_estabelecimento_by_id(
                 .query(locais_query, &[&estabelecimento_id]).await
                 .map_err(|e| format!("Erro ao buscar locais: {}", e))?;
 
-            let locais = locais_rows
-                .into_iter()
-                .map(|local_row| Local {
-                    id: Some(local_row.get("id")),
-                    nome: local_row.get("nome"),
-                    rua: local_row.get("rua"),
-                    numero: local_row.get("numero"),
-                    complemento: local_row.get("complemento"),
-                    bairro: local_row.get("bairro"),
-                    cidade: local_row.get("cidade"),
-                    estado: local_row.get("estado"),
-                    codigo_postal: local_row.get("codigo_postal"),
-                    country: local_row.get("country"),
-                    latitude: local_row.get::<_, Decimal>("latitude"), // Mantém o valor como Decimal
-                    longitude: local_row.get::<_, Decimal>("longitude"), // Conversão explícita para f64
-                })
-                .collect();
+            // Mapeia cada linha de local para a struct Local usando a trait
+            let mut locais = Vec::new(); // vetor para colocar os locais
+
+            for local_row in locais_rows {
+                // Usa a trait AsyncTryFromRow
+                locais.push(Local::try_from_row(client, local_row).await?);
+            }
 
             let estabelecimento = Estabelecimento {
                 id: Some(estabelecimento_id),
@@ -117,7 +130,7 @@ pub async fn find_estabelecimento_by_id(
                 tax_id: row.get("tax_id"),
                 tipo: row.get("tipo"),
                 pais: row.get("pais"),
-                locais,
+                locais, // Agora contém locais com suas quadras
             };
 
             Ok(Some(estabelecimento))
@@ -153,23 +166,12 @@ pub async fn find_all_estabelecimentos(client: &Client) -> Result<Vec<Estabeleci
             .query(locais_query, &[&estabelecimento_id]).await
             .map_err(|e| format!("Erro ao buscar locais: {}", e))?;
 
-        let locais = locais_rows
-            .into_iter()
-            .map(|local_row| Local {
-                id: Some(local_row.get("id")),
-                nome: local_row.get("nome"),
-                rua: local_row.get("rua"),
-                numero: local_row.get("numero"),
-                complemento: local_row.get("complemento"),
-                bairro: local_row.get("bairro"),
-                cidade: local_row.get("cidade"),
-                estado: local_row.get("estado"),
-                codigo_postal: local_row.get("codigo_postal"),
-                country: local_row.get("country"),
-                latitude: local_row.get::<_, Decimal>("latitude"), // Mantém o valor como Decimal
-                longitude: local_row.get::<_, Decimal>("longitude"), // Conversão explícita para f64
-            })
-            .collect();
+        // Mapeia cada linha de local para a struct Local usando a trait
+        let mut locais = Vec::new();
+        for local_row in locais_rows {
+            // Usa a trait AsyncTryFromRow
+            locais.push(Local::try_from_row(client, local_row).await?);
+        }
 
         // coloca
         estabelecimentos.push(Estabelecimento {
@@ -178,7 +180,7 @@ pub async fn find_all_estabelecimentos(client: &Client) -> Result<Vec<Estabeleci
             tax_id: row.get("tax_id"),
             tipo: row.get("tipo"),
             pais: row.get("pais"),
-            locais,
+            locais, // Agora contém locais com suas quadras
         });
     }
 
@@ -286,24 +288,12 @@ pub async fn find_locais_by_estabelecimento_id(
 
     match client.query(query, &[&estabelecimento_id]).await {
         Ok(rows) => {
-            let locais = rows
-                .into_iter()
-                .map(|row| Local {
-                    id: Some(row.get("id")),
-                    nome: row.get("nome"),
-                    rua: row.get("rua"),
-                    numero: row.get("numero"),
-                    complemento: row.get("complemento"),
-                    bairro: row.get("bairro"),
-                    cidade: row.get("cidade"),
-                    estado: row.get("estado"),
-                    codigo_postal: row.get("codigo_postal"),
-                    country: row.get("country"),
-                    latitude: row.get::<_, Decimal>("latitude"),
-                    longitude: row.get::<_, Decimal>("longitude"),
-                })
-                .collect();
-
+            // Mapeia cada linha de local para a struct Local usando a trait
+            let mut locais = Vec::new();
+            for row in rows {
+                // Usa a trait AsyncTryFromRow
+                locais.push(Local::try_from_row(client, row).await?);
+            }
             Ok(locais)
         }
         Err(err) => {
@@ -325,22 +315,8 @@ pub async fn find_local_by_id(client: &Client, local_id: i32) -> Result<Option<L
 
     match client.query_opt(query, &[&local_id]).await {
         Ok(Some(row)) => {
-            let local = Local {
-                id: Some(row.get("id")),
-                nome: row.get("nome"),
-                rua: row.get("rua"),
-                numero: row.get("numero"),
-                complemento: row.get("complemento"),
-                bairro: row.get("bairro"),
-                cidade: row.get("cidade"),
-                estado: row.get("estado"),
-                codigo_postal: row.get("codigo_postal"),
-                country: row.get("country"),
-
-                latitude: row.get::<_, Decimal>("latitude"),
-                longitude: row.get::<_, Decimal>("longitude"),
-            };
-
+            // Converte a linha para Local usando a trait
+            let local = Local::try_from_row(client, row).await?;
             Ok(Some(local))
         }
         Ok(None) => {
@@ -357,6 +333,8 @@ pub async fn find_local_by_id(client: &Client, local_id: i32) -> Result<Option<L
 pub async fn update_local(client: &Client, local_id: i32, local: Local) -> Result<Local, String> {
     println!("Atualizando local com ID: {}", local_id);
 
+    // A query de atualização foca apenas nos campos da tabela 'locais'.
+    // O campo 'quadras' da struct 'local' recebida não é usado aqui.
     let query =
         "
     UPDATE locais
@@ -364,12 +342,6 @@ pub async fn update_local(client: &Client, local_id: i32, local: Local) -> Resul
     WHERE id = $12
 ";
 
-    // let latitude = Decimal::from_f64(local.latitude).ok_or(
-    //     "Falha ao converter latitude para Decimal"
-    // )?;
-    // let longitude = Decimal::from_f64(local.longitude).ok_or(
-    //     "Falha ao converter longitude para Decimal"
-    // )?;
     match
         client.execute(
             query,
@@ -383,8 +355,8 @@ pub async fn update_local(client: &Client, local_id: i32, local: Local) -> Resul
                 &local.estado,
                 &local.codigo_postal,
                 &local.country,
-                &local.latitude,
-                &local.longitude,
+                &local.latitude, // Mantém Decimal
+                &local.longitude, // Mantém Decimal
                 &local_id,
             ]
         ).await
@@ -395,10 +367,10 @@ pub async fn update_local(client: &Client, local_id: i32, local: Local) -> Resul
                 Err(format!("Nenhum local encontrado para o ID: {}", local_id))
             } else {
                 println!("Local com ID {} atualizado com sucesso.", local_id);
-
+                // Busca o local atualizado (incluindo as quadras) para retornar
                 match find_local_by_id(client, local_id).await? {
-                    Some(local) => Ok(local),
-                    None => Err(format!("Local with ID {} not found", local_id)),
+                    Some(updated_local) => Ok(updated_local),
+                    None => Err(format!("Local with ID {} not found after update", local_id)),
                 }
             }
         }
@@ -452,6 +424,93 @@ pub async fn create_quadra(
     transaction.commit().await?;
 
     Ok(quadra.clone())
+}
+
+
+
+/// Busca uma quadra pelo ID.
+pub async fn find_quadra_by_id(client: &Client, quadra_id: i32) -> Result<Option<Quadra>, String> {
+    let query =
+        "
+        SELECT id, nome, local_id, photo_url
+        FROM quadras
+        WHERE id = $1
+    ";
+
+    match client.query_opt(query, &[&quadra_id]).await {
+        Ok(Some(row)) => {
+            let quadra = Quadra {
+                id: Some(row.get("id")),
+                nome: row.get("nome"),
+                local_id: row.get("local_id"),
+                photo_url: row.get("photo_url"),
+            };
+            Ok(Some(quadra))
+        }
+        Ok(None) => Ok(None),
+        Err(err) => Err(format!("Erro ao buscar quadra: {}", err)),
+    }
+}
+
+/// Atualiza uma quadra pelo ID.
+pub async fn update_quadra(
+    client: &Client,
+    quadra_id: i32,
+    quadra: Quadra
+) -> Result<Quadra, String> {
+    let query =
+        "
+        UPDATE quadras
+        SET nome = $1, local_id = $2, photo_url = $3
+        WHERE id = $4
+    ";
+
+    match
+        client.execute(
+            query,
+            &[&quadra.nome, &quadra.local_id, &quadra.photo_url, &quadra_id]
+        ).await
+    {
+        Ok(rows_affected) => {
+            if rows_affected == 0 {
+                Err(format!("Nenhuma quadra encontrada para o ID: {}", quadra_id))
+            } else {
+                // Retorna a quadra atualizada buscando-a novamente
+                find_quadra_by_id(client, quadra_id).await?.ok_or_else(|| {
+                    format!("Quadra com ID {} não encontrada após atualização", quadra_id)
+                })
+            }
+        }
+        Err(err) => Err(format!("Erro ao atualizar quadra: {}", err)),
+    }
+}
+
+/// Busca horários associados a uma quadra pelo ID.
+pub async fn find_horarios_by_quadra_id(
+    client: &Client,
+    quadra_id: i32
+) -> Result<Vec<Horario>, String> {
+    let query =
+        "
+        SELECT id, quadra_id, dia_semana, horario_inicio, horario_fim
+        FROM quadras_horarios
+        WHERE quadra_id = $1
+    ";
+
+    match client.query(query, &[&quadra_id]).await {
+        Ok(rows) => {
+            let horarios = rows
+                .into_iter()
+                .map(|row| Horario {
+                    dia_semana: row.get("dia_semana"),
+                    horario_inicio: row.get("horario_inicio"),
+                    horario_fim: row.get("horario_fim"),
+                })
+                .collect();
+            Ok(horarios)
+        }
+        Err(err) => Err(format!("Erro ao buscar horários: {}", err)),
+    }
 }
 
 // Helper: Returns the day of week string in lowercase as expected (e.g., "segunda", "terca", etc.)

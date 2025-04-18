@@ -17,6 +17,7 @@ use super::{
         list_free_times,
         update_estabelecimento,
         update_local,
+        update_quadra,
     },
 };
 
@@ -90,4 +91,12 @@ pub async fn update_local_service(
 
 pub async fn delete_local_service(client: &mut Client, id: i32) -> Result<(), String> {
     delete_local_by_id(client, id).await
+}
+
+pub async fn update_quadra_service(
+    client: &mut Client,
+    quadra_id: i32,
+    quadra: Quadra
+) -> Result<Quadra, String> {
+    update_quadra(client, quadra_id, quadra).await
 }
