@@ -1,5 +1,5 @@
-use tokio_postgres::{Client, Error};
-use crate::modules::arenas::arenas_model::{Quadra, Horario};
+use tokio_postgres::{ Client, Error };
+use crate::modules::arenas::arenas_model::{ Quadra, Horario };
 
 /// Registra uma nova quadra e insere seus horários em uma única transação.
 /// Se qualquer inserção falhar, toda a operação é revertida.
@@ -46,7 +46,7 @@ pub async fn create_quadra(
     Ok(quadra.clone())
 }
 
-
+//TODO retornar todas as quadras pelo id de um local
 
 /// Busca uma quadra pelo ID.
 pub async fn find_quadra_by_id(client: &Client, quadra_id: i32) -> Result<Option<Quadra>, String> {
@@ -102,6 +102,25 @@ pub async fn update_quadra(
             }
         }
         Err(err) => Err(format!("Erro ao atualizar quadra: {}", err)),
+    }
+}
+
+/// Deleta uma quadra pelo ID.
+pub async fn delete_quadra(client: &Client, quadra_id: i32) -> Result<String, String> {
+    let sql = "
+    DELETE from quadras 
+    WHERE id = $1
+    ";
+
+    match client.execute(sql, &[&quadra_id]).await {
+        Ok(rows_affected) => {
+            if rows_affected == 0 {
+                Err(format!("Nenhuma quadra encontrada para o ID: {}", quadra_id))
+            } else {
+                Ok(format!("Quadra com ID {} deletada com sucesso!", quadra_id))
+            }
+        }
+        Err(err) => Err(format!("Erro ao deletar quadra: {}", err)),
     }
 }
 

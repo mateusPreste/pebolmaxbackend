@@ -5,6 +5,7 @@ mod model;
 mod modules;
 mod route;
 mod schema;
+mod errors;
 
 use std::sync::Arc;
 

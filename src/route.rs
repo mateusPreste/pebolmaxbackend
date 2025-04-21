@@ -5,17 +5,26 @@ use tokio::sync::Mutex;
 use crate::{
     modules::{
         arenas::{
-            arenas_controller::list_free_times_controller, arenas_model::{ Estabelecimento, RegisterQuadraInput }, estabelecimento::controller::{
+            arenas_controller::list_free_times_controller,
+            arenas_model::{ Estabelecimento, RegisterQuadraInput },
+            estabelecimento::controller::{
                 delete_estabelecimento_controller,
                 get_all_estabelecimentos_handler,
                 get_estabelecimento_controller,
                 register_estabelecimento_controller,
                 update_estabelecimento_controller,
-            }, local::controller::{
+            },
+            local::controller::{
                 delete_local_controller,
                 get_locais_controller,
                 update_locais_controller,
-            }, quadra::controller::{ register_quadras_controller, update_quadras_controller }
+            },
+            quadra::controller::{
+                delete_quadra_controller,
+                find_quadra_by_id_controller,
+                register_quadras_controller,
+                update_quadras_controller,
+            },
         },
         auth::auth_controller::{ login_controller, register_user_controller },
         rent::rent_controller::{ register_reserva_controller, update_reserva_status_controller },
@@ -38,7 +47,12 @@ pub fn create_router(app_state: Arc<Mutex<AppState>>) -> Result<Router, Error> {
                 .patch(update_estabelecimento_controller)
         )
         .route("/quadras", post(register_quadras_controller::<RegisterQuadraInput>))
-        .route("/quadras/:id", patch(update_quadras_controller))
+        .route(
+            "/quadras/:id",
+            patch(update_quadras_controller)
+                .get(find_quadra_by_id_controller)
+                .delete(delete_quadra_controller)
+        )
         .route(
             "/locais/:id",
             get(get_locais_controller)
