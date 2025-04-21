@@ -1,4 +1,4 @@
-use axum::{ routing::{ get, patch, post }, Error, Router };
+use axum::{ routing::{ get, patch, post, put, delete }, Error, Router }; // Adicionado put, delete
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -13,6 +13,13 @@ use crate::{
                 get_estabelecimento_controller,
                 register_estabelecimento_controller,
                 update_estabelecimento_controller,
+            },
+            horario::controller::{
+                delete_all_horarios_controller, // Adicionado delete_all_horarios_controller
+                delete_single_horario_controller, // Adicionado delete_single_horario_controller
+                find_horarios_by_quadra_id_controller,
+                update_horarios_controller, // Adicionado update_horarios_controller
+                update_single_horario_controller, // Adicionado update_single_horario_controller
             },
             local::controller::{
                 delete_local_controller,
@@ -52,6 +59,17 @@ pub fn create_router(app_state: Arc<Mutex<AppState>>) -> Result<Router, Error> {
             patch(update_quadras_controller)
                 .get(find_quadra_by_id_controller)
                 .delete(delete_quadra_controller)
+        )
+        .route(
+            "/quadras/:id/horarios",
+            get(find_horarios_by_quadra_id_controller) // GET all horarios for quadra
+                .put(update_horarios_controller) // PUT (replace) all horarios for quadra
+                .delete(delete_all_horarios_controller) // DELETE all horarios for quadra
+        )
+        .route(
+            "/quadras/:id/horarios/:dia_semana",
+            patch(update_single_horario_controller) // PATCH specific day
+                .delete(delete_single_horario_controller) // DELETE specific day
         )
         .route(
             "/locais/:id",

@@ -123,31 +123,3 @@ pub async fn delete_quadra(client: &Client, quadra_id: i32) -> Result<String, St
         Err(err) => Err(format!("Erro ao deletar quadra: {}", err)),
     }
 }
-
-/// Busca horários associados a uma quadra pelo ID.
-pub async fn find_horarios_by_quadra_id(
-    client: &Client,
-    quadra_id: i32
-) -> Result<Vec<Horario>, String> {
-    let query =
-        "
-        SELECT id, quadra_id, dia_semana, horario_inicio, horario_fim
-        FROM quadras_horarios
-        WHERE quadra_id = $1
-    ";
-
-    match client.query(query, &[&quadra_id]).await {
-        Ok(rows) => {
-            let horarios = rows
-                .into_iter()
-                .map(|row| Horario {
-                    dia_semana: row.get("dia_semana"),
-                    horario_inicio: row.get("horario_inicio"),
-                    horario_fim: row.get("horario_fim"),
-                })
-                .collect();
-            Ok(horarios)
-        }
-        Err(err) => Err(format!("Erro ao buscar horários: {}", err)),
-    }
-}
