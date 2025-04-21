@@ -3,3 +3,7 @@ pub mod arenas_model;
 pub mod arenas_repository;
 pub mod arenas_service;
 pub mod validator;
+pub mod estabelecimento;
+pub mod horario;
+pub mod quadra;
+pub mod local;

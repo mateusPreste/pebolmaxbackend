@@ -6,13 +6,10 @@ use tokio_postgres::{ Client, Row };
 
 use crate::InputValidation;
 
-use super::{
-    arenas_repository::find_quadras_by_local_id,
-    validator::{
+use super::{local::repository::find_quadras_by_local_id, validator::{
         estabelecimento_validator::validate_establishment,
         local_validator::validate_local_code,
-    },
-};
+    }};
 
 /// Trait para conversão assíncrona de uma linha de banco de dados.
 #[async_trait]

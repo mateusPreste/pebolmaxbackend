@@ -1,7 +1,6 @@
 use axum::async_trait;
 use serde::{Deserialize, Serialize};
 
-use super::auth_service::AuthService;
 
 use chrono::{DateTime, Utc};
 use tokio_postgres::Row;

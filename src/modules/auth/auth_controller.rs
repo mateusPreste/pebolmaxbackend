@@ -6,13 +6,12 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tokio::sync::Mutex;
 
-use crate::modules::auth::auth_model::{Credenciais, Usuario};
 use crate::modules::auth::auth_service::DbUserResult;
 use crate::AppState;
 
-use super::auth_service::{create_new_user_and_credentials, get_user_and_cred_by_oauth};
+use super::auth_service::create_new_user_and_credentials;
 use super::login_methods::login_strategy::{
-    LoginParams, LoginRequest, LoginResponse, LoginStrategyFactory,
+    LoginParams, LoginRequest,
 };
 
 #[debug_handler]
