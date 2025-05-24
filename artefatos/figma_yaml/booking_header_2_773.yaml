@@ -1,0 +1,396 @@
+id: 2:773
+name: booking_header
+type: COMPONENT
+scrollBehavior: SCROLLS
+componentPropertyDefinitions:
+  ticket_number#1799:0:
+    type: TEXT
+    defaultValue: 7A3B
+  title#1797:1:
+    type: TEXT
+    defaultValue: futzinho de quinta
+  type#1797:0:
+    type: TEXT
+    defaultValue: lista
+children:
+- id: 7:1407
+  name: Frame 262
+  type: FRAME
+  scrollBehavior: SCROLLS
+  children:
+  - id: 7:1414
+    name: image 15
+    type: RECTANGLE
+    scrollBehavior: SCROLLS
+    blendMode: PASS_THROUGH
+    fills:
+    - blendMode: NORMAL
+      type: IMAGE
+      scaleMode: FILL
+      imageRef: afb965459fc1c3cc4b208e4d47c7ea881d505ef5
+    strokes: []
+    strokeWeight: 1.0
+    strokeAlign: INSIDE
+    absoluteBoundingBox:
+      x: 410.0
+      y: -1180.0
+      width: 37.0
+      height: 34.0
+    absoluteRenderBounds:
+      x: 410.0
+      y: -1180.0
+      width: 37.0
+      height: 34.0
+    targetAspectRatio:
+      x: 604.0
+      y: 557.0
+    constraints:
+      vertical: TOP
+      horizontal: LEFT
+    layoutAlign: INHERIT
+    layoutGrow: 0.0
+    layoutSizingHorizontal: FIXED
+    layoutSizingVertical: FIXED
+    exportSettings:
+    - suffix: ''
+      format: PNG
+      constraint:
+        type: SCALE
+        value: 4.0
+    effects: []
+    interactions: []
+  - id: 2:774
+    name: Frame 239
+    type: FRAME
+    scrollBehavior: SCROLLS
+    children:
+    - id: 2:776
+      name: futzinho de quinta
+      type: TEXT
+      scrollBehavior: SCROLLS
+      componentPropertyReferences:
+        characters: title#1797:1
+      blendMode: PASS_THROUGH
+      fills:
+      - blendMode: NORMAL
+        type: SOLID
+        color:
+          r: 1.0
+          g: 1.0
+          b: 1.0
+          a: 1.0
+      strokes: []
+      strokeWeight: 1.0
+      strokeAlign: OUTSIDE
+      absoluteBoundingBox:
+        x: 410.0
+        y: -1134.0
+        width: 357.0
+        height: 24.0
+      absoluteRenderBounds:
+        x: 410.0340881347656
+        y: -1130.6932373046875
+        width: 260.4439392089844
+        height: 18.9886474609375
+      constraints:
+        vertical: TOP
+        horizontal: LEFT
+      layoutAlign: STRETCH
+      layoutGrow: 0.0
+      layoutSizingHorizontal: FILL
+      layoutSizingVertical: HUG
+      characters: futzinho de quinta
+      characterStyleOverrides: []
+      styleOverrideTable: {}
+      lineTypes:
+      - NONE
+      lineIndentations:
+      - 0
+      style:
+        fontFamily: Inter
+        fontPostScriptName: Inter-BlackItalic
+        fontStyle: Black Italic
+        italic: true
+        fontWeight: 900
+        textCase: UPPER
+        textAutoResize: HEIGHT
+        fontSize: 24.0
+        textAlignHorizontal: LEFT
+        textAlignVertical: CENTER
+        letterSpacing: 0.0
+        lineHeightPx: 24.0
+        lineHeightPercent: 82.62910461425781
+        lineHeightPercentFontSize: 100.0
+        lineHeightUnit: PIXELS
+      layoutVersion: 4
+      effects: []
+      interactions: []
+    - id: 2:1068
+      name: Frame 261
+      type: FRAME
+      scrollBehavior: SCROLLS
+      children:
+      - id: 2:775
+        name: lista
+        type: TEXT
+        scrollBehavior: SCROLLS
+        componentPropertyReferences:
+          characters: type#1797:0
+        blendMode: PASS_THROUGH
+        fills:
+        - opacity: 0.7400000095367432
+          blendMode: NORMAL
+          type: SOLID
+          color:
+            r: 1.0
+            g: 1.0
+            b: 1.0
+            a: 1.0
+        strokes: []
+        strokeWeight: 1.0
+        strokeAlign: OUTSIDE
+        absoluteBoundingBox:
+          x: 410.0
+          y: -1110.0
+          width: 36.0
+          height: 12.0
+        absoluteRenderBounds:
+          x: 410.0170593261719
+          y: -1108.8465576171875
+          width: 34.186767578125
+          height: 8.9488525390625
+        constraints:
+          vertical: TOP
+          horizontal: LEFT
+        layoutAlign: INHERIT
+        layoutGrow: 0.0
+        layoutSizingHorizontal: HUG
+        layoutSizingVertical: HUG
+        characters: lista
+        characterStyleOverrides: []
+        styleOverrideTable: {}
+        lineTypes:
+        - NONE
+        lineIndentations:
+        - 0
+        style:
+          fontFamily: Inter
+          fontPostScriptName: Inter-BlackItalic
+          fontStyle: Black Italic
+          italic: true
+          fontWeight: 900
+          textCase: UPPER
+          textAutoResize: WIDTH_AND_HEIGHT
+          fontSize: 12.0
+          textAlignHorizontal: LEFT
+          textAlignVertical: CENTER
+          letterSpacing: 0.0
+          lineHeightPx: 12.0
+          lineHeightPercent: 82.62910461425781
+          lineHeightPercentFontSize: 100.0
+          lineHeightUnit: PIXELS
+        layoutVersion: 4
+        effects: []
+        interactions: []
+      - id: 2:1377
+        name: 7A3B
+        type: TEXT
+        scrollBehavior: SCROLLS
+        componentPropertyReferences:
+          characters: ticket_number#1799:0
+        blendMode: PASS_THROUGH
+        fills:
+        - opacity: 0.699999988079071
+          blendMode: NORMAL
+          type: SOLID
+          color:
+            r: 1.0
+            g: 1.0
+            b: 1.0
+            a: 1.0
+        strokes: []
+        strokeWeight: 1.0
+        strokeAlign: OUTSIDE
+        absoluteBoundingBox:
+          x: 450.0
+          y: -1110.0
+          width: 32.0
+          height: 12.0
+        absoluteRenderBounds:
+          x: 450.4261474609375
+          y: -1108.8465576171875
+          width: 31.299713134765625
+          height: 8.9658203125
+        constraints:
+          vertical: TOP
+          horizontal: LEFT
+        layoutAlign: INHERIT
+        layoutGrow: 0.0
+        layoutSizingHorizontal: HUG
+        layoutSizingVertical: HUG
+        characters: 7A3B
+        characterStyleOverrides: []
+        styleOverrideTable: {}
+        lineTypes:
+        - NONE
+        lineIndentations:
+        - 0
+        style:
+          fontFamily: Inter
+          fontPostScriptName: Inter-BlackItalic
+          fontStyle: Black Italic
+          italic: true
+          fontWeight: 900
+          textCase: UPPER
+          textAutoResize: WIDTH_AND_HEIGHT
+          fontSize: 12.0
+          textAlignHorizontal: LEFT
+          textAlignVertical: CENTER
+          letterSpacing: 0.0
+          lineHeightPx: 12.0
+          lineHeightPercent: 82.62910461425781
+          lineHeightPercentFontSize: 100.0
+          lineHeightUnit: PIXELS
+        layoutVersion: 4
+        effects: []
+        interactions: []
+      blendMode: PASS_THROUGH
+      clipsContent: false
+      background: []
+      fills: []
+      strokes: []
+      strokeWeight: 1.0
+      strokeAlign: INSIDE
+      backgroundColor:
+        r: 0.0
+        g: 0.0
+        b: 0.0
+        a: 0.0
+      layoutMode: HORIZONTAL
+      itemSpacing: 4.0
+      primaryAxisSizingMode: FIXED
+      layoutWrap: NO_WRAP
+      absoluteBoundingBox:
+        x: 410.0
+        y: -1110.0
+        width: 357.0
+        height: 12.0
+      absoluteRenderBounds:
+        x: 410.0
+        y: -1110.0
+        width: 357.0
+        height: 12.0
+      constraints:
+        vertical: TOP
+        horizontal: LEFT
+      layoutAlign: STRETCH
+      layoutGrow: 0.0
+      layoutSizingHorizontal: FILL
+      layoutSizingVertical: HUG
+      effects: []
+      interactions: []
+    blendMode: PASS_THROUGH
+    clipsContent: false
+    background: []
+    fills: []
+    strokes: []
+    strokeWeight: 1.0
+    strokeAlign: INSIDE
+    backgroundColor:
+      r: 0.0
+      g: 0.0
+      b: 0.0
+      a: 0.0
+    layoutMode: VERTICAL
+    counterAxisSizingMode: FIXED
+    primaryAxisSizingMode: FIXED
+    layoutWrap: NO_WRAP
+    absoluteBoundingBox:
+      x: 410.0
+      y: -1134.0
+      width: 357.0
+      height: 36.0
+    absoluteRenderBounds:
+      x: 410.0
+      y: -1134.0
+      width: 357.0
+      height: 36.0
+    constraints:
+      vertical: TOP
+      horizontal: LEFT
+    layoutAlign: STRETCH
+    layoutGrow: 0.0
+    layoutSizingHorizontal: FILL
+    layoutSizingVertical: FIXED
+    effects: []
+    interactions: []
+  blendMode: PASS_THROUGH
+  clipsContent: false
+  background: []
+  fills: []
+  strokes: []
+  strokeWeight: 1.0
+  strokeAlign: INSIDE
+  backgroundColor:
+    r: 0.0
+    g: 0.0
+    b: 0.0
+    a: 0.0
+  layoutMode: VERTICAL
+  counterAxisSizingMode: FIXED
+  itemSpacing: 12.0
+  layoutWrap: NO_WRAP
+  absoluteBoundingBox:
+    x: 410.0
+    y: -1180.0
+    width: 357.0
+    height: 82.0
+  absoluteRenderBounds:
+    x: 410.0
+    y: -1180.0
+    width: 357.0
+    height: 82.0
+  constraints:
+    vertical: TOP
+    horizontal: LEFT
+  layoutAlign: INHERIT
+  layoutGrow: 1.0
+  layoutSizingHorizontal: FILL
+  layoutSizingVertical: HUG
+  effects: []
+  interactions: []
+blendMode: PASS_THROUGH
+clipsContent: false
+background: []
+fills: []
+strokes: []
+strokeWeight: 1.0
+strokeAlign: INSIDE
+backgroundColor:
+  r: 0.0
+  g: 0.0
+  b: 0.0
+  a: 0.0
+layoutMode: HORIZONTAL
+counterAxisSizingMode: FIXED
+itemSpacing: 117.0
+primaryAxisSizingMode: FIXED
+primaryAxisAlignItems: SPACE_BETWEEN
+layoutWrap: NO_WRAP
+absoluteBoundingBox:
+  x: 410.0
+  y: -1180.0
+  width: 357.0
+  height: 97.0
+absoluteRenderBounds:
+  x: 410.0
+  y: -1180.0
+  width: 357.0
+  height: 97.0
+constraints:
+  vertical: TOP
+  horizontal: LEFT
+layoutSizingHorizontal: FIXED
+layoutSizingVertical: FIXED
+effects: []
+interactions: []

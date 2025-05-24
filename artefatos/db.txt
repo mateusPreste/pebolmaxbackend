@@ -1,0 +1,338 @@
+-- ==========================================
+-- Arquivo: init (20230330152240)
+-- ==========================================
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+CREATE TABLE IF NOT EXISTS notes (
+    id UUID PRIMARY KEY NOT NULL DEFAULT (uuid_generate_v4()),
+    title VARCHAR(255) NOT NULL UNIQUE,
+    content TEXT NOT NULL,
+    category VARCHAR(100),
+    published BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ==========================================
+-- Arquivo: create_users_credentials (20250324200245)
+-- ==========================================
+
+-- Tabela de usuarios
+CREATE TABLE usuarios (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(100),
+    cpf VARCHAR(14) UNIQUE,
+    apelido VARCHAR(50) UNIQUE,
+    is_guest BOOLEAN NOT NULL DEFAULT FALSE,
+    foto TEXT,
+    reputacao INT DEFAULT 100 CHECK (reputacao BETWEEN 0 AND 100),
+    modalidade_preferida_id INT,
+    FOREIGN KEY (modalidade_preferida_id) REFERENCES modalidades(id) ON DELETE SET NULL
+);
+
+-- Tabela de credenciais dos usuários
+CREATE TABLE credenciais (
+    id SERIAL PRIMARY KEY,
+    usuario_id INT NOT NULL UNIQUE,
+    email VARCHAR(255) UNIQUE,
+    email_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    phone_number VARCHAR(20),
+    phone_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    oauth_provider VARCHAR(50),
+    oauth_provider_id VARCHAR(255),
+    password_hash VARCHAR(255),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+);
+
+-- Tabela de contas (Pix ou cartão) para pagamentos
+CREATE TABLE contas (
+    id SERIAL PRIMARY KEY,
+    identificador VARCHAR(255) NOT NULL,
+    tipo VARCHAR(20) NOT NULL CHECK (tipo IN ('pix', 'cartao'))
+);
+
+-- Tabela de relacionamento entre usuários e contas
+CREATE TABLE usuarios_contas (
+    usuario_id INT NOT NULL,
+    conta_id INT NOT NULL,
+    data_cadastro TIMESTAMP NOT NULL DEFAULT NOW(),
+    ativo BOOLEAN NOT NULL DEFAULT TRUE,
+    PRIMARY KEY (usuario_id, conta_id),
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    FOREIGN KEY (conta_id) REFERENCES contas(id) ON DELETE CASCADE
+);
+
+-- ==========================================
+-- Arquivo: roles (20250329040057)
+-- ==========================================
+
+-- Tabela de papéis do sistema
+CREATE TABLE niveis (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(50) UNIQUE NOT NULL,
+    descricao TEXT NOT NULL
+);
+
+-- Tabela de associação entre usuários e papéis
+CREATE TABLE usuario_niveis (
+    usuario_id INT NOT NULL,
+    niveis_id INT NOT NULL,
+    data_atribuicao TIMESTAMP NOT NULL DEFAULT NOW(),
+    ativo BOOLEAN NOT NULL DEFAULT TRUE,
+    PRIMARY KEY (usuario_id, niveis_id),
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    FOREIGN KEY (niveis_id) REFERENCES niveis(id) ON DELETE CASCADE
+);
+
+INSERT INTO niveis (nome, descricao) VALUES
+    ('full', 'acesso completo ao sistema'),
+    ('conta pix', 'acesso restrito'),
+    ('visitante', 'apenas acesso aos dados publicos');
+
+-- ==========================================
+-- Arquivo: arenas_data (20250330164222)
+-- ==========================================
+
+-- Tabela de estabelecimentos que gerenciam os locais
+CREATE TABLE estabelecimentos (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    tax_id VARCHAR(50) UNIQUE NOT NULL,
+    tipo VARCHAR(20) NOT NULL CHECK (tipo IN ('publico', 'privado')),
+    pais VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE estabelecimento_formas_pagamento (
+    id SERIAL PRIMARY KEY,
+    estabelecimento_id INT NOT NULL,
+    tipo_pagamento VARCHAR(20) NOT NULL CHECK (tipo_pagamento IN ('pix', 'cartao', 'transferencia')),
+    identificador VARCHAR(255) NOT NULL,
+    verificado BOOLEAN NOT NULL DEFAULT FALSE,
+    data_verificacao TIMESTAMP,
+    observacoes TEXT,
+    FOREIGN KEY (estabelecimento_id) REFERENCES estabelecimentos(id) ON DELETE CASCADE
+);
+
+CREATE TABLE locais (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    rua VARCHAR(255) NOT NULL,
+    numero VARCHAR(50) NOT NULL,
+    complemento VARCHAR(255),
+    bairro VARCHAR(100) NOT NULL,
+    cidade VARCHAR(100) NOT NULL,
+    estado VARCHAR(100) NOT NULL,
+    codigo_postal VARCHAR(20) NOT NULL,
+    country VARCHAR(50) NOT NULL,
+    latitude DECIMAL(10,7) NOT NULL,
+    longitude DECIMAL(10,7) NOT NULL,
+    estabelecimento_id INT NOT NULL,
+    FOREIGN KEY (estabelecimento_id) REFERENCES estabelecimentos(id) ON DELETE CASCADE
+);
+
+CREATE TABLE quadras (
+    id SERIAL PRIMARY KEY,
+    local_id INT NOT NULL,
+    nome VARCHAR(100) NOT NULL,
+    photo_url TEXT,
+    UNIQUE(local_id, nome),
+    FOREIGN KEY (local_id) REFERENCES locais(id) ON DELETE CASCADE
+);
+
+CREATE TABLE quadras_horarios (
+    id SERIAL PRIMARY KEY,
+    quadra_id INT NOT NULL,
+    dia_semana VARCHAR(10) NOT NULL,
+    horario_inicio TIME NOT NULL,
+    horario_fim TIME NOT NULL,
+    CHECK (horario_fim > horario_inicio),
+    CHECK (dia_semana IN ('domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado')),
+    FOREIGN KEY (quadra_id) REFERENCES quadras(id) ON DELETE CASCADE
+);
+
+CREATE TABLE quadras_horarios_excepcionais (
+    id SERIAL PRIMARY KEY,
+    quadra_id INT NOT NULL,
+    data DATE NOT NULL,
+    horario_inicio TIME NOT NULL,
+    horario_fim TIME NOT NULL,
+    CHECK (horario_fim > horario_inicio),
+    FOREIGN KEY (quadra_id) REFERENCES quadras(id) ON DELETE CASCADE,
+    UNIQUE (quadra_id, data)
+);
+
+CREATE TABLE admin_estabelecimento (
+    usuario_id INT NOT NULL,
+    estabelecimento_id INT NOT NULL,
+    cargo VARCHAR(50) NOT NULL,
+    data_inicio TIMESTAMP NOT NULL DEFAULT NOW(),
+    data_fim TIMESTAMP NULL,
+    PRIMARY KEY (usuario_id, estabelecimento_id),
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    FOREIGN KEY (estabelecimento_id) REFERENCES estabelecimentos(id) ON DELETE CASCADE
+);
+
+-- ==========================================
+-- Arquivo: payments (20250331014827)
+-- ==========================================
+
+CREATE TABLE services_types (
+    service_type_id SERIAL PRIMARY KEY,
+    service_type VARCHAR(50) NOT NULL,
+    service_name VARCHAR(100) NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO services_types (service_type, service_name, description)
+VALUES ('reserva', 'Reserva de Quadra', 'Serviço de reserva de quadras esportivas');
+
+CREATE TABLE services (
+    service_id SERIAL PRIMARY KEY,
+    service_type_id INTEGER NOT NULL,
+    service_name VARCHAR(100) NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    FOREIGN KEY (service_type_id) REFERENCES services_types(service_type_id)
+);
+
+CREATE TABLE transactions (
+    transaction_id SERIAL PRIMARY KEY,
+    service_id INTEGER NOT NULL,
+    conta_id INTEGER NOT NULL,
+    amount NUMERIC(12, 2) NOT NULL,
+    status VARCHAR(50) NOT NULL CHECK (status IN ('pendente', 'rejeitado', 'aceito', 'cancelado', 'expirado')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (service_id) REFERENCES services(service_id),
+    FOREIGN KEY (conta_id) REFERENCES contas(id)
+);
+
+CREATE TABLE transaction_status_history (
+    history_id SERIAL PRIMARY KEY,
+    transaction_id INTEGER NOT NULL,
+    status VARCHAR(50) NOT NULL CHECK (status IN ('pendente', 'rejeitado', 'aceito', 'cancelado', 'expirado')),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (transaction_id) REFERENCES transactions(transaction_id)
+);
+
+-- ==========================================
+-- Arquivo: rent (20250331203029)
+-- ==========================================
+
+CREATE TABLE reservas (
+    id SERIAL PRIMARY KEY,
+    usuario_id INT NOT NULL,
+    service_id INT NOT NULL,
+    quadra_id INT NOT NULL,
+    inicio TIMESTAMP NOT NULL,
+    fim TIMESTAMP NOT NULL,
+    status_id VARCHAR(50) CHECK (status_id IN ('Aberto', 'Reservado', 'Em Disputa', 'Cancelado', 'Perdido')) NOT NULL DEFAULT 'Aberto',
+    modalidade VARCHAR(20) CHECK (modalidade IN ('usuarios', 'times')),
+    min_pagantes INT DEFAULT 0,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    FOREIGN KEY (quadra_id) REFERENCES quadras(id) ON DELETE CASCADE,
+    FOREIGN KEY (service_id) REFERENCES services(service_id)
+);
+
+CREATE TABLE reserva_usuarios (
+    reserva_id INT NOT NULL,
+    usuario_id INT NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'pendente' CHECK (status IN ('acessado', 'pendente', 'rejeitado', 'aceito', 'cancelado', 'expirado')),
+    PRIMARY KEY (reserva_id, usuario_id),
+    FOREIGN KEY (reserva_id) REFERENCES reservas(id) ON DELETE CASCADE,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+);
+
+
+-- ==========================================
+-- Arquivo: sports 
+-- ==========================================
+
+
+-- Tabela de Esportes
+CREATE TABLE esportes (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(100) UNIQUE NOT NULL,
+    descricao TEXT, -- Opcional
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Tabela de Modalidades (associadas a um esporte)
+CREATE TABLE modalidades (
+    id SERIAL PRIMARY KEY,
+    esporte_id INT NOT NULL,
+    nome VARCHAR(100) NOT NULL,
+    descricao TEXT, -- Opcional
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    FOREIGN KEY (esporte_id) REFERENCES esportes(id) ON DELETE CASCADE,
+    UNIQUE (esporte_id, nome) -- Garante que o nome da modalidade seja único dentro de um esporte
+);
+
+-- Esportes
+INSERT INTO esportes (nome) VALUES ('Futebol'), ('Basquete'), ('Vôlei'), ('Tênis');
+
+-- Modalidades
+-- Futebol
+INSERT INTO modalidades (esporte_id, nome) VALUES
+((SELECT id FROM esportes WHERE nome = 'Futebol'), 'Campo'),
+((SELECT id FROM esportes WHERE nome = 'Futebol'), 'Salão (Futsal)'),
+((SELECT id FROM esportes WHERE nome = 'Futebol'), 'Society'),
+((SELECT id FROM esportes WHERE nome = 'Futebol'), 'Praia');
+
+-- Basquete
+INSERT INTO modalidades (esporte_id, nome) VALUES
+((SELECT id FROM esportes WHERE nome = 'Basquete'), 'Quadra (5x5)'),
+((SELECT id FROM esportes WHERE nome = 'Basquete'), '3x3');
+
+-- Vôlei
+INSERT INTO modalidades (esporte_id, nome) VALUES
+((SELECT id FROM esportes WHERE nome = 'Vôlei'), 'Quadra'),
+((SELECT id FROM esportes WHERE nome = 'Vôlei'), 'Praia');
+
+-- Tênis
+INSERT INTO modalidades (esporte_id, nome) VALUES
+((SELECT id FROM esportes WHERE nome = 'Tênis'), 'Simples'),
+((SELECT id FROM esportes WHERE nome = 'Tênis'), 'Duplas');
+
+
+-- ==========================================
+-- Arquivo: clubes 
+-- ==========================================
+
+
+-- Tabela de Clubes
+CREATE TABLE clubes (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(150) NOT NULL UNIQUE,
+    descricao TEXT,
+    photo_url TEXT, -- URL para logo/imagem do clube
+    cidade VARCHAR(100), -- Opcional, se clubes tiverem localização física
+    estado VARCHAR(100), -- Opcional
+    data_criacao TIMESTAMP WITH TIME ZONE DEFAULT NOW(), -- Data de criação do clube no sistema
+    criado_por_usuario_id INT, -- Opcional: quem criou o clube
+    FOREIGN KEY (criado_por_usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Tabela de Associação: Membros do Clube (usuários em clubes)
+CREATE TABLE clube_membros (
+    clube_id INT NOT NULL,
+    usuario_id INT NOT NULL,
+    data_entrada TIMESTAMP WITH TIME ZONE DEFAULT NOW(), -- Data que o usuário entrou no clube
+    cargo VARCHAR(50) DEFAULT 'membro', -- Poderia ter 'admin', 'membro', etc. Se houver diferentes tipos de membros.
+    --                                      -- No seu esquema original, você tem PUT /api/clubs/:clubId/members/:userId/status
+    --                                      -- que pode gerenciar isso, ou pode ser um campo aqui.
+    --                                      -- E POST /api/clubs/:clubId/admins que adiciona admin
+    --                                      -- Ter um campo 'status' ou 'role_no_clube' aqui poderia simplificar.
+    ativo BOOLEAN DEFAULT TRUE, -- Se o membro está ativo no clube
+    PRIMARY KEY (clube_id, usuario_id),
+    FOREIGN KEY (clube_id) REFERENCES clubes(id) ON DELETE CASCADE,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+);

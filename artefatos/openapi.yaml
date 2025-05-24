@@ -1,0 +1,4120 @@
+openapi: 3.0.0
+info:
+  title: Pebolmax
+  version: v1.0.0
+  description: Documentação da API do seu sistema.
+
+servers:
+  - url: http://localhost:3000 # Exemplo para desenvolvimento
+    description: Servidor de Desenvolvimento
+  # - url: https://api.seuservidor.com
+  #   description: Servidor de Produção
+
+components:
+  schemas:
+    # Modelo base para Erros
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          description: Mensagem de erro descritiva.
+          example: "Recurso não encontrado."
+        code:
+          type: string
+          description: Um código de erro interno (opcional).
+          example: "RESOURCE_NOT_FOUND"
+        details: # Opcional, para erros mais complexos
+          type: object
+          additionalProperties: true
+          description: Detalhes adicionais sobre o erro.
+      required:
+        - message
+
+    GoogleOAuthLoginParams:
+      type: object
+      description: Parâmetros para login com Google OAuth.
+      properties:
+        id_token:
+          type: string
+          description: O ID Token fornecido pelo Google.
+          example: "eyJhbGciOiJSUzI1NiIsImtpZCI6Im..."
+      required:
+        - id_token
+
+    EmailPasswordLoginParams:
+      type: object
+      description: Parâmetros para login com email e senha.
+      properties:
+        email:
+          type: string
+          format: email
+          description: Endereço de e-mail do usuário.
+          example: "usuario@example.com"
+        password:
+          type: string
+          format: password
+          description: Senha do usuário.
+          example: "s3nh@F0rt3"
+      required:
+        - email
+        - password
+
+    # --- Esquema base para o corpo da requisição de login ---
+    LoginRequest:
+      type: object
+      properties:
+        login_method:
+          type: string
+          description: O método de login a ser utilizado.
+          enum: # Lista os métodos de login suportados
+            - google_oauth
+            - email_password
+            # Adicionar outros métodos aqui no futuro (ex: apple_sso, facebook_sso)
+        params:
+          oneOf: # Usamos oneOf aqui, e o discriminator ajudará a ferramenta a escolher
+            - $ref: '#/components/schemas/GoogleOAuthLoginParams'
+            - $ref: '#/components/schemas/EmailPasswordLoginParams'
+            # Adicionar refs para outros params aqui
+          discriminator:
+            propertyName: login_method # O campo no objeto raiz LoginRequest que determina o tipo de params
+            mapping: # Mapeia o valor de login_method para o schema correto em 'oneOf'
+              google_oauth: '#/components/schemas/GoogleOAuthLoginParams'
+              email_password: '#/components/schemas/EmailPasswordLoginParams'
+              # Adicionar mapeamentos para outros métodos aqui
+      required:
+        - login_method
+        - params
+
+    # --- NOSSOS MODELOS DE DADOS ---
+    Sport:
+      type: object
+      description: Representa um esporte.
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: ID único do esporte.
+          example: 1
+          readOnly: true
+        name:
+          type: string
+          description: Nome do esporte.
+          example: "Futebol"
+        description:
+          type: string
+          nullable: true
+          description: Descrição opcional do esporte.
+      required:
+        - id
+        - name
+
+    Modality:
+      type: object
+      description: Representa uma modalidade de um esporte.
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: ID único da modalidade.
+          example: 1
+          readOnly: true
+        sport_id:
+          type: integer
+          format: int64
+          description: ID do esporte ao qual esta modalidade pertence.
+          example: 1
+        name:
+          type: string
+          description: Nome da modalidade.
+          example: "Campo"
+        description:
+          type: string
+          nullable: true
+          description: Descrição opcional da modalidade.
+      required:
+        - id
+        - sport_id
+        - name
+
+    User:
+      type: object
+      description: Representa um usuário no sistema.
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: ID único do usuário (da tabela 'usuarios').
+          example: 1
+          readOnly: true
+        name: # Da tabela 'usuarios.nome'
+          type: string
+          description: Nome completo do usuário.
+          example: "João da Silva"
+        cpf: # Da tabela 'usuarios.cpf'
+          type: string
+          nullable: true
+          description: CPF do usuário.
+          example: "123.456.789-00"
+        nickname: # Da tabela 'usuarios.apelido'
+          type: string
+          nullable: true
+          description: Apelido do usuário.
+          example: "Jão"
+        is_guest: # Da tabela 'usuarios.is_guest'
+          type: boolean
+          description: Indica se o usuário é um convidado.
+          default: false
+          readOnly: true
+        photo_url: # Da tabela 'usuarios.foto'
+          type: string
+          format: url
+          nullable: true
+          description: URL da foto de perfil do usuário.
+          example: "https://example.com/path/to/photo.jpg"
+        reputation: # Da tabela 'usuarios.reputacao'
+          type: integer
+          description: Reputação do usuário (0-100).
+          minimum: 0
+          maximum: 100
+          default: 100
+          readOnly: true
+        email: # Da tabela 'credenciais.email'
+          type: string
+          format: email
+          description: Endereço de e-mail do usuário.
+          example: "joao.silva@example.com"
+        email_verified: # Da tabela 'credenciais.email_verified'
+          type: boolean
+          description: Indica se o e-mail do usuário foi verificado.
+          readOnly: true
+        phone_number: # Da tabela 'credenciais.phone_number'
+          type: string
+          nullable: true
+          description: Número de telefone do usuário.
+          example: "+5511999998888"
+        phone_verified: # Da tabela 'credenciais.phone_verified'
+          type: boolean
+          description: Indica se o telefone do usuário foi verificado.
+          readOnly: true
+        oauth_provider: # Da tabela 'credenciais.oauth_provider'
+          type: string
+          nullable: true
+          description: Provedor OAuth usado para login ex:'google'.
+          readOnly: true
+        roles: # Inferido de 'usuario_niveis' e 'niveis'
+          type: array
+          items:
+            type: string # Nome do nível, ex: "full", "conta pix"
+          description: Papéis/níveis do usuário no sistema.
+          example: ["full", "conta pix"]
+          readOnly: true
+        preferred_modality:
+          $ref: '#/components/schemas/Modality'
+          nullable: true
+          description: Modalidade preferida do usuário.
+        createdAt:
+          type: string
+          format: date-time
+          description: Data e hora de criação da credencial do usuário.
+          readOnly: true
+        updatedAt: # Da tabela 'credenciais.updated_at'
+          type: string
+          format: date-time
+          description: Data e hora da última atualização da credencial do usuário.
+          readOnly: true
+      required:
+        - id
+        - name
+        - email
+    
+    PublicUser:
+      type: object
+      description: Representa as informações públicas de um usuário.
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: ID único do usuário.
+          example: 1
+          readOnly: true
+        name:
+          type: string
+          description: Nome completo do usuário.
+          example: "João da Silva"
+        nickname:
+          type: string
+          nullable: true
+          description: Apelido do usuário.
+          example: "Jão"
+        photo_url:
+          type: string
+          format: url
+          nullable: true
+          description: URL da foto de perfil do usuário.
+          example: "https://example.com/path/to/photo.jpg"
+        reputation:
+          type: integer
+          description: Reputação do usuário (0-100).
+          minimum: 0
+          maximum: 100
+          default: 100
+          readOnly: true
+        # preferred_modality pode ser incluído se não for considerado sensível
+        preferred_modality:
+          $ref: '#/components/schemas/Modality' # Ou apenas o nome/ID da modalidade
+          nullable: true
+          description: Modalidade preferida do usuário (se público).
+        # Outros campos públicos que você possa querer adicionar (ex: data de entrada no sistema de forma genérica)
+      required:
+        - id
+        - name # O nome geralmente é público
+
+    UserUpdatePayload: # Schema para o corpo da requisição de atualização do usuário
+      type: object
+      description: Campos atualizáveis para o perfil do usuário. Envie apenas os campos que deseja alterar.
+      properties:
+        name:
+          type: string
+          description: Novo nome completo do usuário.
+          example: "João Silva Santos"
+        #cpf: # Se for permitido alterar o CPF após o registro inicial
+        #  type: string
+        #  description: Novo CPF do usuário (requer validação cuidadosa e pode ter implicações).
+        #  example: "111.222.333-44"
+        nickname:
+          type: string
+          nullable: true # Usuário pode querer remover o apelido
+          description: Novo apelido do usuário (deve ser único se não for nulo).
+          example: "João S."
+        photo_url:
+          type: string
+          format: url
+          nullable: true # Usuário pode querer remover a foto
+          description: Nova URL da foto de perfil do usuário.
+          example: "https://example.com/path/to/new_profile.jpg"
+        phone_number: # Usuário pode querer adicionar/atualizar o telefone
+          type: string
+          nullable: true
+          description: Novo número de telefone do usuário.
+          example: "+5521988887777"
+        preferred_modality_id: # Usuário pode querer mudar sua modalidade preferida
+          type: integer
+          format: int64
+          nullable: true # Usuário pode querer remover a preferência
+          description: ID da nova modalidade preferida.
+          example: 3
+        # NÃO inclua campos como: id, email (a menos que tenha um fluxo de verificação),
+        # is_guest, reputation, roles, oauth_provider, email_verified, phone_verified,
+        # createdAt, updatedAt. Estes são geralmente gerenciados pelo sistema ou por fluxos específicos.
+      minProperties: 1 # Pelo menos uma propriedade deve ser enviada para um PATCH
+
+    
+    Club:
+      type: object
+      description: Representa um clube no sistema.
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: ID único do clube.
+          example: 1
+          readOnly: true
+        name:
+          type: string
+          description: Nome do clube.
+          example: "Guerreiros da Madrugada FC"
+        description:
+          type: string
+          nullable: true
+          description: Descrição do clube.
+          example: "Clube para jogos noturnos e amizade."
+        photo_url:
+          type: string
+          format: url
+          nullable: true
+          description: URL da imagem/logo do clube.
+          example: "https://cdn.example.com/club_logos/guerreiros.png"
+        link_externo: # NOVO CAMPO
+          type: string
+          format: url
+          nullable: true
+          description: Link externo do clube (ex grupo de WhatsApp, website).
+          example: "https://chat.whatsapp.com/XYZ123"
+        city:
+          type: string
+          nullable: true
+          description: Cidade onde o clube está localizado (se aplicável).
+          example: "São Paulo"
+        state:
+          type: string
+          nullable: true
+          description: Estado onde o clube está localizado (se aplicável).
+          example: "SP"
+        club_creation_date: # data_criacao_clube do DB
+          type: string
+          format: date-time
+          description: Data de fundação/criação do clube.
+          example: "2023-05-10T10:00:00Z"
+        created_by_user_id:
+          type: integer
+          format: int64
+          description: ID do usuário que criou o clube.
+          example: 5
+          readOnly: true
+        member_count: # Calculado
+          type: integer
+          description: Número total de membros ativos no clube.
+          example: 15
+          readOnly: true
+        # Campos contextuais para o usuário autenticado que está visualizando:
+        is_member:
+          type: boolean
+          description: Indica se o usuário autenticado é membro deste clube.
+          example: true
+          readOnly: true # Calculado no momento da requisição
+        user_role_in_club:
+          type: string
+          nullable: true # Será nulo se o usuário não for membro
+          description: O cargo do usuário autenticado neste clube, se for membro.
+          enum: [admin, membro, moderador, null] # Inclui null explicitamente
+          example: "admin"
+          readOnly: true # Calculado no momento da requisição
+      required:
+        - id
+        - name
+        - member_count
+        - is_member
+        # photo_url pode ser nulo se não houver imagem
+        # club_creation_date e created_by_user_id são geralmente sempre presentes
+    
+    # Para a resposta paginada de clubes
+    PaginatedClubsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Club'
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 10
+        total:
+          type: integer
+          example: 25
+        totalPages:
+          type: integer
+          example: 3
+      required:
+        - data
+        - page
+        - limit
+        - total
+        - totalPages
+
+
+    WalletBalance:
+      type: object
+      description: Saldo da carteira do usuário.
+      properties:
+        balance:
+          type: number
+          format: double # Ou string para precisão monetária exata
+          description: O saldo atual na carteira.
+          example: 150.75
+        currency:
+          type: string
+          description: Código da moeda do saldo ex BRL.
+          example: "BRL"
+      required:
+        - balance
+        - currency
+
+    PaymentMethodSummary:
+      type: object
+      description: Resumo de uma forma de pagamento do usuário.
+      properties:
+        id: # ID da tabela 'contas'
+          type: integer
+          format: int64
+          description: ID da forma de pagamento (conta).
+          example: 10
+        type: # Derivado de 'contas.tipo'
+          type: string
+          description: Tipo da forma de pagamento.
+          enum: [pix, cartao] # Possivelmente adicionar 'transferencia' se for um tipo separado em 'contas' ou derivado das novas tabelas
+          example: "pix"
+        identifier: # Derivado de 'contas_cartao_cadastradas.card_mask' ou 'contas_pix_cadastradas.pix_key_value'
+          type: string
+          description: Identificador da forma de pagamento (ex chave PIX, últimos 4 dígitos do cartão - mascarado para segurança).
+          example: "**** **** **** 1234" # Exemplo para cartão
+          # example: "usuariopix@dominio.com.br" # Exemplo para PIX (pode ser mascarado também)
+        is_default: # Da tabela 'usuarios_contas.is_default'
+          type: boolean
+          description: Indica se é a forma de pagamento padrão do usuário.
+          example: true
+        is_verified: # NOVO CAMPO: Da tabela 'contas.is_verified'
+          type: boolean
+          description: Indica se esta forma de pagamento foi verificada (ex validação de chave PIX, verificação de cartão).
+          example: true
+        is_active: # NOVO CAMPO: Da tabela 'contas.is_active'
+          type: boolean
+          description: Indica se esta forma de pagamento está ativa e utilizável no momento.
+          example: true
+      required:
+        - id
+        - type
+        - identifier
+        - is_default
+        - is_verified # Adicionar required se for sempre retornado
+        - is_active # Adicionar required se for sempre retornado
+
+    WalletTransactionSummary:
+      type: object
+      description: Resumo de uma transação recente da carteira.
+      properties:
+        transaction_id: # Da tabela 'transactions.transaction_id'
+          type: integer
+          format: int64
+          description: ID da transação.
+          example: 707
+        service_name: # Da tabela 'services.service_name' (o item pagável)
+          type: string
+          description: Nome/descrição do serviço/item pagável associado à transação.
+          example: "Depósito PIX #123"
+        service_type: # Da tabela 'services_types.service_type' (a categoria)
+          type: string
+          description: Categoria da transação (ex 'carteira_deposito', 'reserva', 'carteira_saque').
+          example: "carteira_deposito"
+        amount: # Da tabela 'transactions.amount'
+          type: number
+          format: double # Ou string
+          description: Valor da transação (positivo para crédito na carteira, negativo para débito).
+          example: 50.00
+        currency: # Da tabela 'transactions.currency'
+          type: string
+          description: Moeda da transação.
+          example: "BRL"
+        status: # Da tabela 'transactions.status'
+          type: string
+          description: Status da transação.
+          example: "concluida"
+        created_at: # Da tabela 'transactions.created_at'
+          type: string
+          format: date-time
+          description: Data e hora da transação.
+      required:
+        - transaction_id
+        - service_name
+        - service_type
+        - amount
+        - currency
+        - status
+        - created_at
+
+    UserWalletResponse:
+      type: object
+      description: Resposta contendo os detalhes da carteira do usuário.
+      properties:
+        wallet_balance:
+          $ref: '#/components/schemas/WalletBalance'
+        recent_transactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/WalletTransactionSummary'
+          description: Lista das 10 transações mais recentes que afetaram o saldo da carteira.
+        payment_methods:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentMethodSummary'
+          description: Lista das formas de pagamento ativas do usuário.
+      required:
+        - wallet_balance
+        - recent_transactions
+        - payment_methods
+
+    PixOpenFinanceDepositDetails:
+      type: object
+      description: Detalhes para um depósito via PIX Open Finance.
+      properties:
+        method_type: # Campo discriminador
+          type: string
+          description: Tipo do método de depósito.
+          enum: [pix_open_finance]
+        institution_id:
+          type: string
+          nullable: true
+          description: (Opcional) ID da instituição financeira de origem para a iniciação do pagamento Open Finance.
+          example: "001" # Código do Banco do Brasil, por exemplo
+      required:
+        - method_type
+
+    CreditCardDepositDetails:
+      type: object
+      description: Detalhes para um depósito via Cartão de Crédito.
+      properties:
+        method_type: # Campo discriminador
+          type: string
+          description: Tipo do método de depósito.
+          enum: [credit_card]
+        # Opção 1: Token do cartão (mais seguro)
+        card_token:
+          type: string
+          description: Token do cartão gerado pelo frontend em comunicação direta com o gateway de pagamento.
+          example: "tok_xxxxxxxxxxxxxxxxx"
+        # Opção 2: ID de um cartão salvo pelo usuário (se implementado)
+        # saved_card_id:
+        #   type: integer
+        #   format: int64
+        #   description: ID de um cartão de crédito previamente salvo pelo usuário.
+        #   example: 15
+        # installments: # Removido pois depósitos são à vista, mas o gateway pode retornar
+        #   type: integer
+        #   description: Número de parcelas (geralmente 1 para depósitos).
+        #   default: 1
+        #   example: 1
+      required:
+        - method_type
+        # Pelo menos uma forma de identificar o cartão (token ou ID salvo)
+        # Se usar card_token:
+        - card_token
+        # Se usar saved_card_id:
+        # - saved_card_id
+
+    WalletDepositMethodDetails: # Schema pai para o discriminator do request
+      type: object
+      description: Detalhes específicos do método de depósito escolhido.
+      oneOf:
+        - $ref: '#/components/schemas/PixOpenFinanceDepositDetails'
+        - $ref: '#/components/schemas/CreditCardDepositDetails'
+      discriminator:
+        propertyName: method_type # Este campo nos schemas filhos irá discriminar
+        mapping:
+          pix_open_finance: '#/components/schemas/PixOpenFinanceDepositDetails'
+          credit_card: '#/components/schemas/CreditCardDepositDetails'
+      required: # O discriminator exige que o campo propertyName esteja no schema pai ou filho
+        - method_type
+
+
+    WalletDepositRequest:
+      type: object
+      description: Dados para iniciar uma solicitação de depósito na carteira.
+      properties:
+        amount:
+          type: number
+          format: double
+          description: O valor a ser depositado.
+          example: 50.75
+          minimum: 0.01
+        currency:
+          type: string
+          description: Código da moeda do depósito.
+          default: "BRL"
+          example: "BRL"
+        deposit_method_details:
+          $ref: '#/components/schemas/WalletDepositMethodDetails'
+      required:
+        - amount
+        - deposit_method_details
+
+    # --- SCHEMAS PARA A RESPONSE BODY DO DEPÓSITO ---
+
+    PixOpenFinanceDepositResponsePayload:
+      type: object
+      description: Instruções para completar um depósito via PIX Open Finance.
+      properties:
+        payment_type: # Campo discriminador
+          type: string
+          enum: [pix_open_finance_instructions]
+        payable_item_id: # O service_id do "item pagável" (services) criado
+          type: integer
+          format: int64
+          description: ID do item de depósito gerado internamente.
+          example: 501
+        identificadorPagamento: # Retorno do SPE
+          type: string
+          description: Identificador da iniciação de pagamento no sistema Open Finance.
+          example: "urn:efi:ae71713f-875b-4af3-9d85-0bcb43288847"
+        redirectURI: # Retorno do SPE
+          type: string
+          format: uri
+          description: URI para onde o usuário deve ser redirecionado para autorizar o pagamento no banco.
+          example: "https://open-finance.banco.com.br/authorize?request=eyJjd..."
+      required:
+        - payment_type
+        - payable_item_id
+        - identificadorPagamento
+        - redirectURI
+
+    CreditCardChargeDetails: # Sub-objeto para o resultado do cartão
+      type: object
+      properties:
+        installments:
+          type: integer
+          description: Número de parcelas em que o pagamento foi processado (geralmente 1 para depósito).
+          example: 1
+        installment_value:
+          type: integer # Em centavos
+          description: Valor da parcela em centavos.
+          example: 5990 # R$ 59,90
+        charge_id:
+          type: string
+          description: ID da cobrança/transação no gateway de pagamento do cartão.
+          example: "ch_exemplo123abc"
+        status:
+          type: string
+          description: Status da cobrança no gateway (ex 'approved', 'paid', 'pending_capture').
+          example: "approved"
+        total:
+          type: integer # Em centavos
+          description: Valor total da cobrança em centavos.
+          example: 5990
+        payment_method_type: # "payment" no seu exemplo original
+          type: string
+          description: Tipo de método de pagamento usado.
+          enum: [credit_card]
+          example: "credit_card"
+      required:
+        - installments
+        - installment_value
+        - charge_id
+        - status
+        - total
+        - payment_method_type
+
+    CreditCardDepositResponsePayload:
+      type: object
+      description: Resultado de uma tentativa de depósito com cartão de crédito.
+      properties:
+        payment_type: # Campo discriminador
+          type: string
+          enum: [credit_card_charge_result]
+        payable_item_id: # O service_id do "item pagável" (services) criado
+          type: integer
+          format: int64
+          description: ID do item de depósito gerado internamente.
+          example: 502
+        charge_details: # Contém os detalhes da cobrança do cartão
+          $ref: '#/components/schemas/CreditCardChargeDetails'
+      required:
+        - payment_type
+        - payable_item_id
+        - charge_details
+
+    WalletDepositResponse: # Schema pai para o discriminator da response
+      type: object
+      description: Resposta da solicitação de depósito, contendo instruções de pagamento ou resultado da cobrança.
+      oneOf:
+        - $ref: '#/components/schemas/PixOpenFinanceDepositResponsePayload'
+        - $ref: '#/components/schemas/CreditCardDepositResponsePayload'
+      discriminator:
+        propertyName: payment_type # Este campo nos schemas filhos irá discriminar
+        mapping:
+          pix_open_finance_instructions: '#/components/schemas/PixOpenFinanceDepositResponsePayload'
+          credit_card_charge_result: '#/components/schemas/CreditCardDepositResponsePayload'
+      required: # O discriminator exige que o campo propertyName esteja no schema pai ou filho
+        - payment_type
+    
+
+    WalletWithdrawalRequest:
+      type: object
+      description: Dados para iniciar uma solicitação de saque da carteira.
+      properties:
+        amount:
+          type: number
+          format: double # Ou string para precisão
+          description: O valor a ser sacado da carteira.
+          example: 25.50
+          minimum: 0.01 # Definir um valor mínimo de saque
+        currency:
+          type: string
+          description: Código da moeda do saque.
+          default: "BRL"
+          example: "BRL"
+          # enum: ["BRL"] # Se apenas BRL for suportado
+        destination_account_id: # ID da 'conta' do usuário para onde o dinheiro será enviado
+          type: integer
+          format: int64
+          description: ID da conta de destino (previamente cadastrada pelo usuário) para o saque.
+          example: 12 # ID de uma conta PIX do usuário em 'usuarios_contas'
+        description: # Opcional
+          type: string
+          nullable: true
+          description: Uma breve descrição ou motivo para o saque (opcional).
+          example: "Reembolso pessoal"
+      required:
+        - amount
+        - destination_account_id
+
+    WalletWithdrawalResponse:
+      type: object
+      description: Resposta da solicitação de saque.
+      properties:
+        message:
+          type: string
+          description: Mensagem de sucesso ou informativa.
+          example: "Solicitação de saque recebida e está em processamento."
+        withdrawal_request_id: # O service_id do "item pagável" (services) de saque criado
+          type: integer
+          format: int64
+          description: ID da solicitação de saque (item pagável) gerada.
+          example: 503
+        transaction_id: # O transaction_id da transação de saque criada
+          type: integer
+          format: int64
+          description: ID da transação de saque iniciada.
+          example: 803
+        status: # Status inicial da transação de saque
+          type: string
+          description: Status atual da solicitação de saque.
+          example: "processando" # ou 'pendente'
+        estimated_completion_time: # Opcional
+          type: string
+          nullable: true
+          description: Estimativa de tempo para conclusão do saque (ex "até 1 dia útil").
+          example: "Até 2 horas"
+      required:
+        - message
+        - withdrawal_request_id
+        - transaction_id
+        - status
+
+    
+    UserTransactionItem:
+      type: object
+      description: Detalhes de uma transação financeira do usuário na plataforma.
+      properties:
+        transaction_id:
+          type: integer
+          format: int64
+          description: ID da transação.
+          example: 801
+        payable_item_reference_id: # O payable_item_id da tabela 'payable_items'
+          type: integer
+          format: int64
+          nullable: true # Pode ser nulo para transações diretas de carteira que não têm um "item pagável" prévio (ex: ajuste de admin)
+          description: ID de referência do item pagável associado, se houver.
+          example: 101
+        payable_item_description: # Descrição do 'payable_items'
+          type: string
+          nullable: true
+          description: Descrição do item/serviço transacionado.
+          example: "Pagamento Reserva #55 - Quadra X 20h por João"
+        service_category_code: # Código do 'service_types.code'
+          type: string
+          description: Código da categoria do serviço/item que originou ou é o tipo da transação.
+          example: "RESERVATION_PAYMENT"
+        service_category_name: # Nome do 'service_types.name'
+          type: string
+          description: Nome da categoria do serviço/item.
+          example: "Pagamento de Reserva"
+        amount:
+          type: number
+          format: double
+          description: Valor da transação. Positivo para entradas (na perspectiva do usuário/carteira), negativo para saídas.
+          example: -50.00 # Exemplo de pagamento de reserva
+        currency:
+          type: string
+          description: Moeda da transação.
+          example: "BRL"
+        status:
+          type: string
+          description: Status da transação.
+          enum: [pendente, processando, rejeitado, concluida, cancelado, expirado, reembolsada]
+          example: "concluida"
+        payment_method_type:
+          type: string
+          enum: [pix, cartao, wallet_balance, other_external, internal_adjustment] # Adicionado internal_adjustment
+          nullable: true
+          description: Tipo de método de pagamento usado ou natureza da movimentação.
+          example: "wallet_balance"
+        payment_method_identifier:
+          type: string
+          nullable: true
+          description: Identificador parcial do método de pagamento externo (ex últimos 4 dígitos do cartão), se aplicável.
+          example: "**** **** **** 1234"
+        wallet_balance_after_transaction: # NOVO CAMPO
+          type: number
+          format: double
+          nullable: true # Será nulo se a transação não afetou diretamente o saldo da carteira
+          description: Saldo da carteira do usuário imediatamente após esta transação ter sido concluída (se aplicável).
+          example: 250.75
+        created_at:
+          type: string
+          format: date-time
+          description: Data e hora da criação da transação.
+          example: "2024-01-15T10:05:00Z"
+      required:
+        - transaction_id
+        # payable_item_reference_id e payable_item_description podem ser nulos
+        - service_category_code
+        - service_category_name
+        - amount
+        - currency
+        - status
+        - created_at
+
+    PaginatedUserTransactionsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserTransactionItem'
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 10
+        totalItems:
+          type: integer
+          example: 125
+        totalPages:
+          type: integer
+          example: 13
+      required:
+        - data
+        - page
+        - limit
+        - totalItems
+        - totalPages
+    
+    ClubUpdatePayload: # Schema para o corpo da requisição de atualização do clube (multipart/form-data)
+      type: object
+      properties: # Todos os campos são opcionais para um PATCH
+        name:
+          type: string
+          description: Novo nome do clube (deve ser único se fornecido e diferente do atual).
+          example: "Os Invencíveis FC"
+        description:
+          type: string
+          nullable: true # Permitir remover a descrição enviando null ou string vazia dependendo da lógica
+          description: Nova descrição do clube.
+          example: "Clube dedicado à paixão pelo futebol e amizade duradoura."
+        link_externo:
+          type: string
+          format: url
+          nullable: true
+          description: Novo link externo do clube (ex grupo de WhatsApp).
+          example: "https://chat.whatsapp.com/ABCDEF123"
+        city:
+          type: string
+          nullable: true
+          description: Nova cidade do clube.
+          example: "Rio de Janeiro"
+        state:
+          type: string
+          nullable: true
+          description: Novo estado do clube.
+          example: "RJ"
+        club_image: # Campo para a nova imagem
+          type: string
+          format: binary
+          nullable: true # Opcional: só envia se quiser trocar a imagem
+          description: Novo arquivo de imagem para o clube (ex logo). Se fornecido, substitui a imagem existente.
+     
+    ClubMemberListItem:
+      type: object
+      description: Informações de um membro listado de um clube.
+      properties:
+        user:
+          $ref: '#/components/schemas/PublicUser' # Contém id, name, nickname, photo_url
+        role_in_club:
+          type: string
+          description: O cargo do usuário neste clube.
+          enum: [admin, membro, banido] # Conforme definido em clube_membros.cargo_no_clube
+          example: "membro"
+        joined_at:
+          type: string
+          format: date-time
+          description: Data em que o usuário se juntou ao clube.
+          example: "2023-10-01T15:30:00Z"
+      required:
+        - user
+        - role_in_club
+        - joined_at
+
+    
+    ClubMemberUpdateRequest:
+      type: object
+      description: Dados para atualizar o cargo de um membro do clube.
+      properties:
+        role:
+          type: string
+          description: O novo cargo/status para o membro no clube.
+          enum: [admin, membro, banido]
+          example: "admin"
+      required:
+        - role
+
+    PaginatedClubMembersResponse:
+      type: object
+      description: Resposta paginada contendo a lista de membros de um clube.
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClubMemberListItem'
+        page:
+          type: integer
+          description: Número da página atual.
+          example: 1
+        limit:
+          type: integer
+          description: Número de itens por página.
+          example: 10
+        totalItems:
+          type: integer
+          description: Número total de membros que correspondem aos critérios de filtro.
+          example: 42
+        totalPages:
+          type: integer
+          description: Número total de páginas.
+          example: 5
+      required:
+        - data
+        - page
+        - limit
+        - totalItems
+        - totalPages
+
+    ClubJoinRequestStatus:
+      type: object
+      properties:
+        request_id:
+          type: integer
+        club_id:
+          type: integer
+        user_id:
+          type: integer
+        status:
+          type: string
+          enum: [pendente, aprovada, rejeitada, cancelada_pelo_usuario]
+        requested_at:
+          type: string
+          format: date-time
+        message:
+          type: string
+      required:
+        - request_id
+        - club_id
+        - user_id
+        - status
+        - requested_at
+        - message
+    
+    AddClubMemberRequest:
+      type: object
+      description: Dados para adicionar um novo membro a um clube.
+      properties:
+        userId:
+          type: integer
+          format: int64
+          description: O ID do usuário (da tabela 'usuarios') a ser adicionado ao clube.
+          example: 789
+        role: # Opcional, para definir o cargo no momento da adição
+          type: string
+          description: O cargo inicial para o novo membro no clube. Se omitido, o padrão é 'membro'.
+          enum: [admin, membro] # Não se adiciona alguém diretamente como 'banido' aqui.
+          default: "membro"
+          example: "membro"
+      required:
+        - userId
+  
+
+    ClubJoinRequestItem:
+      type: object
+      description: Detalhes de uma solicitação de entrada em um clube.
+      properties:
+        request_id: # clube_solicitacoes_entrada.id
+          type: integer
+          format: int64
+          description: ID da solicitação de entrada.
+          example: 101
+        user: # Informações do solicitante
+          $ref: '#/components/schemas/PublicUser' # Reutiliza o schema PublicUser
+        requested_at: # clube_solicitacoes_entrada.data_solicitacao
+          type: string
+          format: date-time
+          description: Data e hora em que a solicitação foi feita.
+          example: "2024-03-15T10:00:00Z"
+        # Não precisamos do status aqui, pois este endpoint só lista os 'pendentes'
+      required:
+        - request_id
+        - user
+        - requested_at
+
+    PaginatedClubJoinRequestsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClubJoinRequestItem'
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 10
+        totalItems:
+          type: integer
+          example: 5
+        totalPages:
+          type: integer
+          example: 1
+      required:
+        - data
+        - page
+        - limit
+        - totalItems
+        - totalPages
+
+    
+    LocationSummaryForEstablishment:
+      type: object
+      description: Resumo de um local (arena física) pertencente a um estabelecimento.
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: ID do local.
+        name:
+          type: string
+          description: Nome do local.
+          example: "Arena Pebolmax - Unidade Centro"
+        city:
+          type: string
+          description: Cidade do local.
+        state:
+          type: string
+          description: Estado do local.
+        court_count:
+          type: integer
+          description: Número de quadras neste local.
+          example: 5
+      required:
+        - id
+        - name
+        - city
+        - state
+        - court_count
+
+    EstablishmentPaymentMethod:
+      type: object
+      description: Forma de pagamento aceita pelo estabelecimento.
+      properties:
+        payment_type:
+          type: string
+          enum: [pix, cartao, transferencia]
+          description: Tipo do método de pagamento.
+        identifier:
+          type: string
+          description: Identificador da forma de pagamento (ex Chave PIX, tipo de cartão).
+          # Para segurança, este pode ser mascarado se exibido em contextos menos restritos.
+          # Como este endpoint é para admins, pode ser o valor completo.
+          example: "pix:01234567890"
+        is_verified:
+          type: boolean
+          description: Indica se esta forma de pagamento foi verificada.
+      required:
+        - payment_type
+        - identifier
+        - is_verified
+
+    EstablishmentDetailsResponse:
+      type: object
+      description: Detalhes de um estabelecimento e seus locais associados.
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: ID do estabelecimento.
+        name:
+          type: string
+          description: Nome do estabelecimento.
+          example: "Rede de Arenas Pebolmax"
+        tax_id:
+          type: string
+          description: Identificador fiscal do estabelecimento (CNPJ/CPF).
+          example: "XX.XXX.XXX/0001-XX"
+        type:
+          type: string
+          description: Tipo do estabelecimento.
+          enum: [publico, privado]
+        country:
+          type: string
+          description: País do estabelecimento.
+        payment_methods:
+          type: array
+          items:
+            $ref: '#/components/schemas/EstablishmentPaymentMethod'
+          description: Formas de pagamento configuradas pelo estabelecimento.
+        locations:
+          type: array
+          items:
+            $ref: '#/components/schemas/LocationSummaryForEstablishment'
+          description: Lista de locais (arenas) pertencentes a este estabelecimento.
+      required:
+        - id
+        - name
+        - tax_id # Incluído pois é para admins do estabelecimento
+        - type
+        - country
+        - locations
+        - payment_methods
+
+    ArenaCompetingListDetail:
+      type: object
+      description: Detalhes de uma lista/reserva que está competindo por ou ocupando um horário.
+      properties:
+        reservation_id:
+          type: integer
+          format: int64
+          description: ID da reserva/lista.
+        list_status:
+          type: string
+          description: Status atual da lista/reserva.
+          enum: [VAZIA, ABERTA, EM DISPUTA, ESPERANDO, RESERVADO, PERDIDO, CANCELADA, CANCELADA_PELA_ARENA, CONCLUIDO]
+        modality:
+          type: string
+          description: Modalidade da reserva.
+          enum: [usuarios, times]
+        min_payers_required:
+          type: integer
+          description: Número mínimo de pagantes configurado para esta lista.
+        current_paid_payers:
+          type: integer
+          description: Número de usuários que já pagaram (status 'pago_presencial' ou 'pago_antecipado').
+        pending_payment_payers:
+          type: integer
+          description: Número de usuários com status 'pagar_presencialmente'.
+        occupation_percentage_paid:
+          type: number
+          format: double
+          description: Porcentagem de ocupação baseada nos pagantes confirmados em relação ao mínimo necessário.
+          example: 70.5
+        total_value_collected_so_far:
+          type: string # Usar string para valores monetários para evitar problemas de precisão de float
+          description: Valor total arrecadado até o momento pelos pagantes confirmados.
+          example: "150.75"
+        organizer_details:
+          type: object
+          nullable: true
+          properties:
+            user_id:
+              type: integer
+              format: int64
+              description: ID do usuário organizador.
+            nickname:
+              type: string
+              nullable: true
+              description: Apelido do organizador.
+          required:
+            - user_id
+        club_details:
+          type: object
+          nullable: true
+          properties:
+            club_id:
+              type: integer
+              format: int64
+              description: ID do clube associado à lista.
+            name:
+              type: string
+              nullable: true
+              description: Nome do clube associado.
+          required:
+            - club_id
+      required:
+        - reservation_id
+        - list_status
+        - modality
+        - min_payers_required
+        - current_paid_payers
+        - pending_payment_payers
+        - occupation_percentage_paid
+        - total_value_collected_so_far
+        # organizer_details e club_details podem ser nulos se a lista for VAZIA
+
+    ArenaTimeSlot:
+      type: object
+      description: Representa um slot de tempo e sua disponibilidade/listas associadas.
+      properties:
+        time:
+          type: string
+          description: Horário de início do slot (HH:MM).
+          example: "09:00"
+        status:
+          type: string
+          description: Status consolidado do slot de tempo.
+          enum: [available, unavailable_operational, contested, prioritized, booked, past_reservation]
+          # available: Livre e operacional
+          # unavailable_operational: Fechado por horário regular ou exceção de indisponibilidade
+          # contested: Ocupado por listas VAZIA, ABERTA, ou EM DISPUTA
+          # prioritized: Ocupado por lista ESPERANDO
+          # booked: Ocupado por lista RESERVADO
+          # past_reservation: Ocupado por lista CONCLUIDO
+        competing_lists:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArenaCompetingListDetail'
+          description: Lista de reservas/listas que ocupam ou competem por este slot de tempo.
+      required:
+        - time
+        - status
+        - competing_lists
+
+    CourtAvailabilityDetail:
+      type: object
+      description: Detalhes da disponibilidade de uma quadra específica.
+      properties:
+        court_id:
+          type: integer
+          format: int64
+        court_name:
+          type: string
+        time_slots:
+          type: array
+          items:
+            $ref: '#/components/schemas/ArenaTimeSlot'
+      required:
+        - court_id
+        - court_name
+        - time_slots
+
+    ArenaAvailableHoursResponse:
+      type: object
+      description: Resposta contendo a disponibilidade de horários para todas as quadras de um local.
+      properties:
+        local_id:
+          type: integer
+          format: int64
+        local_name:
+          type: string
+        date:
+          type: string
+          format: date
+        interval_minutes: # Renomeado
+          type: integer
+          description: Granularidade dos slots de tempo em minutos.
+        courts_availability:
+          type: array
+          items:
+            $ref: '#/components/schemas/CourtAvailabilityDetail'
+      required:
+        - local_id
+        - local_name
+        - date
+        - interval_minutes
+        - courts_availability
+
+    SportSummary:
+      type: object
+      description: Resumo de um esporte.
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+      required:
+        - id
+        - name
+
+    ModalityWithSportSummary:
+      type: object
+      description: Detalhes de uma modalidade suportada pela quadra, incluindo seu esporte.
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: ID da modalidade.
+        name:
+          type: string
+          description: Nome da modalidade.
+        sport:
+          $ref: '#/components/schemas/SportSummary'
+      required:
+        - id
+        - name
+        - sport
+
+    SearchCourtLocalDetails:
+      type: object
+      description: Detalhes do local da quadra encontrada.
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        address_summary:
+          type: string
+          description: Um resumo textual do endereço (ex Rua, Número, Bairro, Cidade - UF).
+          example: "Rua das Palmeiras, 123, Centro, São Paulo - SP"
+        # Se quiser retornar coordenadas para o cliente usar no mapa:
+        # coordinates:
+        #   type: object
+        #   nullable: true
+        #   properties:
+        #     latitude:
+        #       type: number
+        #       format: double
+        #     longitude:
+        #       type: number
+        #       format: double
+      required:
+        - id
+        - name
+        - address_summary
+
+    SearchCourtEstablishmentDetails:
+      type: object
+      description: Detalhes do estabelecimento da quadra encontrada.
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+      required:
+        - id
+        - name
+
+    SearchCompetingListSummary:
+      type: object
+      description: Resumo de uma lista que está competindo pelo horário solicitado.
+      properties:
+        reservation_id:
+          type: integer
+          format: int64
+        list_status_in_db: # O status real da reserva no BD
+          type: string
+          enum: [VAZIA, ABERTA, EM DISPUTA] # Apenas estes são "competidores" para um novo entrante
+        occupation_percentage_paid:
+          type: number
+          format: double
+          description: Porcentagem de ocupação da lista pelos pagantes confirmados.
+        current_paid_payers:
+          type: integer
+          description: Número de pagantes confirmados na lista.
+        min_payers_required:
+          type: integer
+          description: Número mínimo de pagantes para a lista.
+        pending_payment_payers:
+          type: integer
+          description: Número de usuários com pagamento pendente na lista.
+      required:
+        - reservation_id
+        - list_status_in_db
+        - occupation_percentage_paid
+        - current_paid_payers
+        - min_payers_required
+        - pending_payment_payers
+
+    SearchAvailabilitySlotInfo:
+      type: object
+      description: Informações de disponibilidade para o slot de tempo solicitado na quadra.
+      properties:
+        requested_start_datetime_utc:
+          type: string
+          format: date-time # Ex: 2024-08-15T22:00:00Z
+          description: Horário de início solicitado, convertido para UTC.
+        requested_end_datetime_utc:
+          type: string
+          format: date-time # Ex: 2024-08-15T23:00:00Z
+          description: Horário de fim calculado, convertido para UTC.
+        slot_status:
+          type: string
+          description: Indica se o slot está disponível ou disponível com concorrência.
+          enum: [available, available_with_competition]
+        estimated_price_per_person:
+          type: string # Usar string para valores monetários
+          nullable: true # Pode não haver preço estimado em alguns casos
+          description: Preço estimado por pessoa para este slot/quadra.
+          example: "15.00"
+        competing_lists_summary:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchCompetingListSummary'
+          description: Presente se slot_status for "available_with_competition", detalhando as listas existentes.
+      required:
+        - requested_start_datetime_utc
+        - requested_end_datetime_utc
+        - slot_status
+        - competing_lists_summary # Mesmo que vazia se 'available'
+
+    AvailableCourtSearchResultItem:
+      type: object
+      description: Representa uma quadra disponível encontrada na busca.
+      properties:
+        court_id:
+          type: integer
+          format: int64
+        court_name:
+          type: string
+        court_photo_url:
+          type: string
+          format: url
+          nullable: true
+        supported_modalities: # Alterado de main_modality
+          type: array
+          items:
+            $ref: '#/components/schemas/ModalityWithSportSummary'
+          description: Lista de modalidades que esta quadra suporta.
+        local_details:
+          $ref: '#/components/schemas/SearchCourtLocalDetails'
+        establishment_details:
+          $ref: '#/components/schemas/SearchCourtEstablishmentDetails'
+        availability_slot_info:
+          $ref: '#/components/schemas/SearchAvailabilitySlotInfo'
+      required:
+        - court_id
+        - court_name
+        - supported_modalities
+        - local_details
+        - establishment_details
+        - availability_slot_info
+
+    PaginatedAvailableCourtsResponse:
+      type: object
+      properties:
+        search_criteria:
+          type: object
+          properties:
+            date:
+              type: string
+              format: date
+            time:
+              type: string
+              pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
+            duration_minutes:
+              type: integer
+            city_filter:
+              type: string
+            modality_filter_id:
+              type: integer
+              nullable: true
+          required:
+            - date
+            - time
+            - duration_minutes
+            - city_filter
+        pagination:
+          type: object
+          properties:
+            current_page:
+              type: integer
+            per_page:
+              type: integer
+            total_items:
+              type: integer
+            total_pages:
+              type: integer
+          required:
+            - current_page
+            - per_page
+            - total_items
+            - total_pages
+        available_courts:
+          type: array
+          items:
+            $ref: '#/components/schemas/AvailableCourtSearchResultItem'
+      required:
+        - search_criteria
+        - pagination
+        - available_courts
+
+    UserRentOrganizerDetails:
+      type: object
+      description: Detalhes do organizador da reserva/lista (se não for o próprio usuário visualizando).
+      properties:
+        user_id:
+          type: integer
+          format: int64
+        nickname:
+          type: string
+          nullable: true
+      required:
+        - user_id
+
+    UserRentClubDetails:
+      type: object
+      description: Detalhes do clube associado à reserva/lista.
+      properties:
+        club_id:
+          type: integer
+          format: int64
+        name:
+          type: string
+          nullable: true # Nome do clube
+      required:
+        - club_id
+
+    UserRentParticipantsInfo:
+      type: object
+      description: Informações sobre os participantes da reserva/lista.
+      properties:
+        min_payers_required:
+          type: integer
+        current_paid_payers:
+          type: integer
+        pending_payment_payers:
+          type: integer
+      required:
+        - min_payers_required
+        - current_paid_payers
+        - pending_payment_payers
+
+    UserRentListItem:
+      type: object
+      description: Representa um item na lista de reservas/aluguéis do usuário.
+      properties:
+        reservation_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          description: Status atual da reserva/lista.
+          enum: [VAZIA, ABERTA, EM DISPUTA, ESPERANDO, RESERVADO, PERDIDO, CANCELADA, CANCELADA_PELA_ARENA, CONCLUIDO]
+        court_name:
+          type: string
+          description: Nome da quadra.
+        local_name:
+          type: string
+          description: Nome do local/arena.
+        local_logo_url:
+          type: string
+          format: url
+          nullable: true
+          description: URL do logo do local (ou do estabelecimento se o local não tiver um específico).
+        start_time_utc:
+          type: string
+          format: date-time
+          description: Data e hora de início da reserva (UTC).
+        end_time_utc:
+          type: string
+          format: date-time
+          description: Data e hora de término da reserva (UTC).
+        modality:
+          type: string
+          description: Modalidade da reserva.
+          enum: [usuarios, times]
+        organizer_details:
+          $ref: '#/components/schemas/UserRentOrganizerDetails'
+          nullable: true # Será nulo se o usuário autenticado for o organizador ou se a lista for VAZIA
+        club_details:
+          $ref: '#/components/schemas/UserRentClubDetails'
+          nullable: true # Será nulo se não houver clube associado (ex: lista VAZIA)
+        participants_info:
+          $ref: '#/components/schemas/UserRentParticipantsInfo'
+        user_role_in_reservation:
+          type: string
+          enum: [organizer, participant, none] # 'none' se for uma lista VAZIA que ele criou como admin de arena e ainda não tem vinculo como jogador/organizador pessoal
+          description: Papel do usuário autenticado nesta reserva/lista.
+      required:
+        - reservation_id
+        - status
+        - court_name
+        - local_name
+        # local_logo_url é nullable
+        - start_time_utc
+        - end_time_utc
+        - modality
+        - participants_info
+        - user_role_in_reservation
+
+    PaginatedUserRentsResponse:
+      type: object
+      properties:
+        pagination:
+          type: object
+          properties:
+            current_page:
+              type: integer
+            per_page:
+              type: integer
+            total_items:
+              type: integer
+            total_pages:
+              type: integer
+          required:
+            - current_page
+            - per_page
+            - total_items
+            - total_pages
+        user_rents:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserRentListItem'
+      required:
+        - pagination
+        - user_rents
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+paths:
+  /api/auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Login de usuário
+      description: |
+        Endpoint de login que suporta múltiplos métodos de credencial.
+        O campo `login_method` determina a estrutura esperada para o campo `params`.
+        **Métodos Suportados e Parâmetros Esperados:**
+
+        - **`google_oauth`**:
+          - `params`:
+            - `id_token` (string, required): O ID Token fornecido pelo Google.
+
+        - **`email_password`**:
+          - `params`:
+            - `email` (string, required): Email do usuário.
+            - `password` (string, required): Senha do usuário.
+
+        **Fluxo de Resposta:**
+        - Se o login for bem-sucedido e o perfil do usuário estiver completo, retorna 200 com `userId`, `token` (JWT da sua API) e o objeto `User`.
+        - Se o login for via OAuth e o usuário não existir ou precisar completar o cadastro (ex: falta CPF, modalidade preferida), retorna 400 com uma mensagem indicando a necessidade de completar o registro e, opcionalmente, um `registration_token`.
+        - Para login com email/senha, se as credenciais forem inválidas, retorna 401.
+      operationId: loginUserFlexible
+      requestBody:
+        description: Credenciais de login baseadas no método escolhido.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest' # Referencia o schema base LoginRequest
+            examples: # Adicionar exemplos para cada método
+              googleLogin:
+                summary: Exemplo de login com Google OAuth
+                value:
+                  login_method: "google_oauth"
+                  params:
+                    id_token: "eyJhbGciOiJSUzI1NiIsImtpZCI6Im..."
+              emailPasswordLogin:
+                summary: Exemplo de login com Email/Senha
+                value:
+                  login_method: "email_password"
+                  params:
+                    email: "usuario@example.com"
+                    password: "s3nh@F0rt3"
+      responses:
+        '200':
+          description: Login bem-sucedido. Usuário autenticado.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userId:
+                    type: integer
+                    format: int64
+                    description: ID do usuário no sistema.
+                    example: 1
+                  token:
+                    type: string
+                    description: Token de acesso JWT para autenticação em chamadas subsequentes da API.
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhMWIyYzNkNC1lNWY2LTc4OTAtMTIzNC01Njc4OTBhYmNkZWYiLCJpYXQiOjE2MTYyMzkwMjJ9.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+                  user:
+                    $ref: '#/components/schemas/User'
+                required:
+                  - userId
+                  - token
+                  - user
+        '400':
+          description: |
+            Credenciais validadas mas o usuário necessita completar o cadastro.
+            Pode ocorrer se o usuário associado ao `id_token` não existe e informações adicionais são necessárias para criá-lo, ou se o usuário existe mas falta completar o perfil.
+            A resposta pode incluir um `registration_token` se o próximo passo for `/api/auth/complete-registration`.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+                  - type: object
+                    properties:
+                      registration_token:
+                        type: string
+                        description: Um token temporário para ser usado no endpoint de completar registro.
+                        example: "temp_reg_token_for_user_abc"
+                      required_fields:
+                        type: array
+                        items:
+                          type: string
+                        example: ["cpf", "preferred_modality_id"]
+              examples:
+                needsCompletionOAuth:
+                  value:
+                    message: "Usuário precisa completar o cadastro. Use o endpoint /api/auth/complete-registration."
+                    code: "NEEDS_REGISTRATION_COMPLETION"
+                    registration_token: "temp_reg_token_for_user_abc"
+                    required_fields: ["cpf", "preferred_modality_id"]
+                invalidParams:
+                  value:
+                    message: "Parâmetros inválidos para o método de login especificado."
+                    code: "INVALID_LOGIN_PARAMS"
+                unsupportedMethod:
+                  value:
+                    message: "Método de login não suportado."
+                    code: "UNSUPPORTED_LOGIN_METHOD"
+        '401':
+          description: |
+            Falha na autenticação.
+            - Para OAuth: `id_token` inválido ou não verificado.
+            - Para Email/Senha: Credenciais inválidas (email ou senha incorretos).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidOAuthToken:
+                  value:
+                    message: "Não autorizado. O token OAuth fornecido é inválido."
+                    code: "OAUTH_AUTHENTICATION_FAILED"
+                invalidEmailPassword:
+                  value:
+                    message: "Credenciais inválidas."
+                    code: "EMAIL_PASSWORD_AUTHENTICATION_FAILED"
+        '500':
+          description: Erro interno do servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/auth/complete-registration:
+    post:
+      tags:
+        - Auth
+      summary: Completa o registro do usuário
+      description: |
+        Completa o cadastro do usuário após um login inicial via OAuth que indicou a necessidade de mais informações.
+        Informações como CPF, nome (se precisar ser diferente do OAuth), apelido e esporte preferido são necessárias.
+        Este endpoint deve ser chamado se o `/api/auth/login` retornou um status 400 indicando que o registro precisa ser completado,
+        e pode requerer um `registration_token` (se o seu fluxo de login o fornecer) ou ser protegido pelo token JWT obtido no login (se o login já cria um usuário "incompleto" e retorna um token).
+        Para esta definição, vamos assumir que um JWT do usuário "incompleto" é usado para autorizar esta chamada, ou o `registration_token` é enviado no corpo.
+      operationId: completeUserRegistration
+      security: # Se for protegido pelo JWT do usuário incompleto
+         - bearerAuth: []
+      requestBody:
+        description: Dados necessários para completar o registro do usuário.
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                registration_token:
+                  type: string
+                  description: Token temporário recebido do endpoint de login para associar esta requisição, se aplicável.
+                  example: "temp_reg_token_for_user_abc"
+                name:
+                  type: string
+                  description: Nome completo do usuário (pode ser para confirmar ou alterar o nome vindo do OAuth).
+                  example: "Maria Souza da Silva"
+                cpf:
+                  type: string
+                  description: CPF do usuário. Deve ser único.
+                  example: "987.654.321-00"
+                nickname:
+                  type: string
+                  nullable: true
+                  description: Apelido do usuário. Deve ser único.
+                  example: "Mari Souza"
+                preferred_modality_id:
+                  type: integer
+                  format: int64
+                  description: ID da modalidade preferida escolhida pelo usuário.
+                  example: 2
+                photo_url:
+                  type: string
+                  format: url
+                  nullable: true
+                  description: URL da foto de perfil (se o usuário quiser definir/atualizar uma diferente da do OAuth).
+                  example: "https://example.com/path/to/new_photo.jpg"
+              required:
+                - name
+                - cpf
+                - preferred_modality_id
+      responses:
+        '200':
+          description: Registro completado com sucesso. Perfil do usuário atualizado. Retorna o objeto User completo e um novo token de API se o anterior era de escopo limitado.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: Novo token de acesso JWT com permissões completas.
+                  user:
+                    $ref: '#/components/schemas/User'
+                required:
+                  - user
+        '400':
+          description: |
+            Erro de validação nos dados fornecidos (ex: CPF inválido, campos obrigatórios faltando, `registration_token` inválido/expirado se usado).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidModalityId:
+                  value:
+                    message: "O ID da modalidade fornecido não é válido."
+                    code: "INVALID_MODALITY_ID"
+        '401':
+          description: Não autorizado (ex `registration_token` inválido ou não fornecido quando esperado, ou JWT do usuário incompleto inválido).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflito de dados (ex CPF ou apelido já existem).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Erro interno do servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  /api/users/me:
+    get:
+      tags:
+        - Users
+      summary: Obtém informações do usuário autenticado
+      description: Retorna o objeto `User` completo (com todos os detalhes) para o usuário atualmente autenticado, com base no token JWT.
+      operationId: getCurrentAuthenticatedUser
+      security:
+        - bearerAuth: [] # Requer autenticação
+      responses:
+        '200':
+          description: Informações do usuário autenticado retornadas com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User' # Retorna o objeto User completo
+        '401':
+          description: Não autenticado. Token JWT ausente ou inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Token de autenticação ausente ou inválido."
+                code: "UNAUTHENTICATED"
+        '500':
+          description: Erro interno do servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    patch:
+      tags:
+        - Users
+      summary: Atualiza informações do usuário autenticado
+      description: |
+        Permite que o usuário autenticado atualize suas próprias informações de perfil.
+        Envie apenas os campos que deseja modificar.
+        Observações Importantes sobre o Backend:
+
+        Ao implementar o backend para este endpoint PATCH:
+
+            Você precisará carregar o registro do usuário do banco de dados.
+            Iterar sobre os campos presentes no corpo da requisição.
+            Atualizar apenas esses campos no objeto do usuário.
+            Realizar validações específicas (ex: se nickname foi enviado, verificar se já existe para outro usuário).
+            Salvar as alterações no banco de dados.
+            O updated_at na tabela credenciais (ou usuarios, dependendo de onde você armazena a data de última modificação do perfil) deve ser atualizado automaticamente pelo seu ORM ou por um trigger no banco.
+      operationId: updateCurrentUser
+      security:
+        - bearerAuth: [] # Requer autenticação
+      requestBody:
+        description: Campos do usuário a serem atualizados.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdatePayload'
+      responses:
+        '200':
+          description: Perfil do usuário atualizado com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User' # Retorna o objeto User completo e atualizado
+        '400':
+          description: |
+            Erro de validação nos dados fornecidos.
+            (ex: formato de email inválido se email fosse editável, CPF inválido, `preferred_modality_id` não existe).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                validationError:
+                  value:
+                    message: "Erro de validação: O apelido fornecido já está em uso."
+                    code: "VALIDATION_ERROR"
+                    details:
+                      field: "nickname"
+                      issue: "already_exists"
+                invalidModalityId:
+                  value:
+                    message: "O ID da modalidade fornecido não é válido."
+                    code: "INVALID_MODALITY_ID"
+        '401':
+          description: Não autenticado. Token JWT ausente ou inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409': # Conflict
+          description: Conflito de dados (ex apelido já existe e pertence a outro usuário).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                nicknameInUse:
+                  value:
+                    message: "Apelido já cadastrado para outro usuário."
+                    code: "NICKNAME_ALREADY_EXISTS"
+        '500':
+          description: Erro interno do servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/users/{userId}:
+    get:
+      tags:
+        - Users
+      summary: Obtém informações públicas de um usuário específico
+      description: |
+        Retorna o objeto `PublicUser` (informações públicas) para o `userId` especificado.
+        Este endpoint pode ser acessado por qualquer usuário autenticado.
+      operationId: getPublicUserProfileById
+      security: # Geralmente requer autenticação para evitar scraping excessivo, mas pode ser público se desejado.
+        - bearerAuth: [] # Vamos manter como autenticado por padrão.
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: ID do usuário para recuperar o perfil público.
+          schema:
+            type: integer
+            format: int64
+            example: 2
+      responses:
+        '200':
+          description: Informações públicas do usuário retornadas com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicUser' # Retorna o objeto PublicUser
+        '401': # Se o endpoint for protegido
+          description: Não autenticado. Token JWT ausente ou inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Usuário não encontrado com o ID fornecido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Usuário com ID '2' não encontrado."
+                code: "USER_NOT_FOUND"
+        '500':
+          description: Erro interno do servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/sports:
+    get:
+      tags:
+        - Sports & Modalities
+      summary: Lista todos os esportes disponíveis
+      description: Retorna uma lista de todos os esportes cadastrados no sistema.
+      operationId: listSports
+      parameters:
+        - name: page
+          in: query
+          description: Número da página para paginação.
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          description: Quantidade de itens por página.
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Lista de esportes retornada com sucesso.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Sport'
+                  page:
+                    type: integer
+                    example: 1
+                  limit:
+                    type: integer
+                    example: 20
+                  total:
+                    type: integer
+                    example: 4
+        '500':
+          description: Erro interno do servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/sports/{sportId}/modalities:
+    get:
+      tags:
+        - Sports & Modalities
+      summary: Lista todas as modalidades de um esporte específico
+      description: Retorna uma lista de todas as modalidades associadas a um esporte específico.
+      operationId: listModalitiesBySport
+      parameters:
+        - name: sportId
+          in: path
+          description: ID do esporte para buscar as modalidades.
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: page
+          in: query
+          description: Número da página para paginação.
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          description: Quantidade de itens por página.
+          required: false
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Lista de modalidades retornada com sucesso.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Modality'
+                  page:
+                    type: integer
+                    example: 1
+                  limit:
+                    type: integer
+                    example: 20
+                  total:
+                    type: integer
+                    example: 3
+        '404':
+          description: Esporte não encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                cpfInUse:
+                  value:
+                    message: "CPF já cadastrado para outro usuário."
+                    code: "CPF_ALREADY_EXISTS"
+                nicknameInUse:
+                  value:
+                    message: "Apelido já cadastrado para outro usuário."
+                    code: "NICKNAME_ALREADY_EXISTS"
+        '500':
+          description: Erro interno do servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  
+  /api/users/{userId}/club-member:
+    get:
+      tags:
+        - Users
+        - Clubs
+      summary: Lista os clubes dos quais um usuário é membro
+      description: |
+        Retorna uma lista paginada dos clubes aos quais o usuário especificado (`userId`) pertence.
+        Qualquer usuário autenticado pode visualizar esta lista para qualquer `userId`.
+      operationId: listUserMemberClubs
+      security:
+        - bearerAuth: [] # Requer autenticação (usuário logado)
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: ID do usuário para listar os clubes dos quais ele é membro.
+          schema:
+            type: integer
+            format: int64
+            example: 1
+        - name: page
+          in: query
+          description: Número da página para a lista de clubes.
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: limit
+          in: query
+          description: Número de clubes por página.
+          required: false
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Lista de clubes onde o usuário é membro retornada com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedClubsResponse'
+        '401':
+          description: Não autenticado. Token JWT ausente ou inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Token de autenticação ausente ou inválido."
+                code: "UNAUTHENTICATED"
+        '404':
+          description: Usuário com o `userId` especificado não encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Usuário com ID '123' não encontrado."
+                code: "USER_NOT_FOUND"
+        '500':
+          description: Erro interno do servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/users/{userId}/club-admin:
+    get:
+      tags:
+        - Users
+        - Clubs
+      summary: Lista os clubes onde um usuário é administrador
+      description: |
+        Retorna uma lista paginada dos clubes nos quais o usuário especificado (`userId`) tem o cargo de 'admin'.
+        Qualquer usuário autenticado pode visualizar esta lista para qualquer `userId`.
+      operationId: listUserAdminClubs
+      security:
+        - bearerAuth: [] # Requer autenticação (usuário logado)
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: ID do usuário para listar os clubes que ele administra.
+          schema:
+            type: integer
+            format: int64
+            example: 1
+        - name: page
+          in: query
+          description: Número da página para a lista de clubes.
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: limit
+          in: query
+          description: Número de clubes por página.
+          required: false
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Lista de clubes onde o usuário é administrador retornada com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedClubsResponse' # Reutiliza a mesma estrutura de resposta
+        '401':
+          description: Não autenticado. Token JWT ausente ou inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Token de autenticação ausente ou inválido."
+                code: "UNAUTHENTICATED"
+        '404':
+          description: Usuário com o `userId` especificado não encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Usuário com ID '123' não encontrado."
+                code: "USER_NOT_FOUND"
+        '500':
+          description: Erro interno do servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+
+  /api/users/me/wallet:
+    get:
+      tags:
+        - Wallet
+        - Users
+      summary: Obtém o resumo da carteira do usuário autenticado
+      description: |
+        Retorna dados da carteira do usuário autenticado, incluindo:
+        - Saldo atual.
+        - As 10 transações mais recentes que afetaram o saldo da carteira (depósitos, saques, pagamentos com saldo).
+        - As formas de pagamento ativas cadastradas pelo usuário.
+      operationId: getCurrentUserWallet
+      security:
+        - bearerAuth: [] # Requer autenticação
+      responses:
+        '200':
+          description: Resumo da carteira retornado com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserWalletResponse'
+        '401':
+          description: Não autenticado. Token JWT ausente ou inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Token de autenticação ausente ou inválido."
+                code: "UNAUTHENTICATED"
+        '404':
+          description: Carteira não encontrada para o usuário (cenário improvável se a carteira é criada junto com o usuário).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Carteira não encontrada."
+                code: "WALLET_NOT_FOUND"
+        '500':
+          description: Erro interno do servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/users/me/wallet/deposits:
+    post:
+      tags:
+        - Wallet
+        - Users
+      summary: Inicia uma solicitação de depósito na carteira
+      description: |
+        Cria uma solicitação de depósito para a carteira do usuário autenticado, utilizando PIX (via iniciação Open Finance) ou Cartão de Crédito.
+        - Para **PIX Open Finance**, o usuário informa o valor. A API retorna um `identificadorPagamento` e uma `redirectURI` para autorização no banco.
+        - Para **Cartão de Crédito**, o usuário informa o valor e um `card_token` (ou ID de cartão salvo). A API retorna o resultado da tentativa de cobrança.
+
+        Um "item pagável" (`service`) é criado com status 'pendente_pagamento'.
+        A confirmação final do depósito (e o crédito na carteira) ocorre via webhook após o pagamento ser efetivado.
+      operationId: createUserWalletDeposit
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: Detalhes do depósito, incluindo valor e método de pagamento.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WalletDepositRequest'
+            examples:
+              pixOpenFinanceDeposit:
+                summary: Depósito com PIX Open Finance
+                value:
+                  amount: 75.00
+                  currency: "BRL"
+                  deposit_method_details:
+                    method_type: "pix_open_finance"
+                    # institution_id: "001" # Opcional
+              creditCardDeposit:
+                summary: Depósito com Cartão de Crédito (usando token)
+                value:
+                  amount: 100.00
+                  currency: "BRL"
+                  deposit_method_details:
+                    method_type: "credit_card"
+                    card_token: "tok_xxxxxxxxxxxxxxxxx"
+                    # installments: 1 # Opcional no request, backend pode assumir 1
+      responses:
+        '201': # Created
+          description: Solicitação de depósito criada com sucesso e instruções/resultado retornados.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WalletDepositResponse'
+              examples:
+                pixResponse:
+                  summary: Resposta para PIX Open Finance
+                  value:
+                    payment_type: "pix_open_finance_instructions"
+                    payable_item_id: 501
+                    identificadorPagamento: "urn:efi:ae71713f-875b-4af3-9d85-0bcb43288847"
+                    redirectURI: "https://open-finance.banco.com.br/authorize?request=eyJjd..."
+                cardResponse:
+                  summary: Resposta para Cartão de Crédito
+                  value:
+                    payment_type: "credit_card_charge_result"
+                    payable_item_id: 502
+                    charge_details:
+                      installments: 1
+                      installment_value: 10000 # R$ 100,00
+                      charge_id: "ch_exemplo123abc"
+                      status: "approved"
+                      total: 10000
+                      payment_method_type: "credit_card"
+        '400':
+          description: Erro de validação nos dados da requisição (ex valor inválido, método de depósito não suportado, dados do cartão/pix ausentes ou inválidos).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Não autenticado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422': # Unprocessable Entity
+          description: Não foi possível processar a solicitação de depósito (ex falha na comunicação com o SPE/gateway de pagamento, cartão recusado pelo emissor).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Erro interno do servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/users/me/wallet/withdrawals:
+    post:
+      tags:
+        - Wallet
+        - Users
+      summary: Inicia uma solicitação de saque da carteira
+      description: |
+        Cria uma solicitação de saque de fundos da carteira do usuário autenticado para uma de suas contas externas cadastradas.
+        A possibilidade e os destinos do saque dependem do nível da conta do usuário:
+        - **Conta 'full'**: Pode sacar para qualquer conta PIX válida cadastrada.
+        - **Conta 'pix'**: Pode sacar apenas para a única conta PIX que tem permissão para cadastrar.
+        - **Conta 'visitante'**: Saque não permitido.
+
+        Um "item pagável" (`service`) e uma transação são criados com status inicial.
+        A efetivação do saque e a dedução do saldo ocorrem após processamento (e confirmação via webhook, se aplicável).
+      operationId: createUserWalletWithdrawal
+      security:
+        - bearerAuth: [] # Requer autenticação
+      requestBody:
+        description: Valor, moeda e conta de destino para o saque.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WalletWithdrawalRequest'
+            example:
+              amount: 50.00
+              currency: "BRL"
+              destination_account_id: 12
+              description: "Saque para despesas"
+      responses:
+        '202': # Accepted (A solicitação foi aceita para processamento, mas não concluída)
+          description: Solicitação de saque recebida e aceita para processamento.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WalletWithdrawalResponse'
+        '400':
+          description: |
+            Erro de validação nos dados da requisição.
+            Exemplos:
+            - Valor de saque inválido (ex: negativo, abaixo do mínimo, excede saldo).
+            - Conta de destino (`destination_account_id`) não encontrada, inativa ou não pertence ao usuário.
+            - Conta de destino inválida para o tipo de usuário (ex: usuário 'conta pix' tentando sacar para conta não permitida).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                insufficientFunds:
+                  value:
+                    message: "Saldo insuficiente para realizar o saque."
+                    code: "INSUFFICIENT_FUNDS"
+                invalidDestinationAccount:
+                  value:
+                    message: "A conta de destino especificada é inválida ou não permitida para este tipo de saque."
+                    code: "INVALID_DESTINATION_ACCOUNT"
+        '401':
+          description: Não autenticado. Token JWT ausente ou inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Acesso negado. Saque não permitido para este tipo de conta de usuário (ex 'visitante').
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Usuários com seu nível de conta não têm permissão para realizar saques."
+                code: "WITHDRAWAL_NOT_ALLOWED_FOR_ACCOUNT_LEVEL"
+        '422': # Unprocessable Entity
+          description: Não foi possível processar a solicitação de saque no momento (ex falha na comunicação com o sistema de pagamentos externo).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Falha ao iniciar a transferência de saque. Tente novamente mais tarde."
+                code: "PAYMENT_SYSTEM_ERROR"
+        '500':
+          description: Erro interno do servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  /api/users/me/transactions:
+    get:
+      tags:
+        - Users
+        - Transactions
+      summary: Lista o histórico de transações financeiras do usuário autenticado
+      description: |
+        Retorna uma lista paginada de todas as transações financeiras (depósitos, saques, pagamentos de serviços, etc.)
+        associadas ao usuário autenticado na plataforma.
+        Inclui o saldo da carteira no momento da transação, se a transação afetou diretamente o saldo.
+        Permite filtros por período, tipo de serviço e status da transação.
+      operationId: getCurrentUserTransactionsWithBalanceSnapshot
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          description: Número da página para a lista de transações.
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: limit
+          in: query
+          description: Número de transações por página.
+          required: false
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 100
+        - name: start_date
+          in: query
+          description: "Filtra transações a partir desta data (formato: YYYY-MM-DD)."
+          required: false
+          schema:
+            type: string
+            format: date
+            example: "2024-01-01"
+        - name: end_date
+          in: query
+          description: "Filtra transações até esta data (formato: YYYY-MM-DD)."
+          required: false
+          schema:
+            type: string
+            format: date
+            example: "2024-01-31"
+        - name: service_type_code # Filtro pelo 'code' de service_types
+          in: query
+          description: "Filtra transações por código da categoria do serviço (ex: 'WALLET_DEPOSIT', 'RESERVATION_PAYMENT')."
+          required: false
+          schema:
+            type: string
+            example: "RESERVATION_PAYMENT"
+        - name: status
+          in: query
+          description: "Filtra transações pelo status."
+          required: false
+          schema:
+            type: string
+            enum: [pendente, processando, rejeitado, concluida, cancelado, expirado, reembolsada]
+            example: "concluida"
+      responses:
+        '200':
+          description: Lista de transações retornada com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserTransactionsResponse'
+        '400':
+          description: Erro nos parâmetros de filtro.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Não autenticado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Erro interno do servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  /api/clubs:
+    post:
+      tags:
+        - Clubs
+      summary: Cria um novo clube
+      description: |
+        Permite que um usuário autenticado com nível 'full' crie um novo clube.
+        O usuário pode ser administrador de no máximo um clube.
+        O nome do clube deve ser único.
+        Uma imagem para o clube é obrigatória e deve ser enviada como um arquivo.
+        A imagem será redimensionada, salva em blob storage, e sua URL será retornada.
+        Campos como descrição, cidade e estado podem ser adicionados/editados posteriormente.
+      operationId: createClub
+      security:
+        - bearerAuth: [] # Requer autenticação
+      requestBody:
+        required: true
+        content:
+          multipart/form-data: # Tipo de conteúdo para upload de arquivos
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Nome do novo clube (deve ser único).
+                  example: "Guerreiros da Madrugada FC"
+                club_image:
+                  type: string
+                  format: binary # Indica que é um arquivo binário
+                  description: Arquivo de imagem para o clube (ex logo). Tipos suportados JPEG, PNG. Tamanho máximo 100MB.
+              required:
+                - name
+                - club_image
+            encoding: # Especifica como cada parte do multipart é codificada (opcional, mas bom para clareza)
+              club_image:
+                contentType: image/png, image/jpeg # Tipos de mídia aceitos para a imagem
+      responses:
+        '201': # Created
+          description: Clube criado com sucesso. Retorna o objeto do clube.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Club' # Retorna o objeto Club completo
+          headers:
+            Location: # Header padrão para POST bem-sucedido
+              description: URL do recurso do clube recém-criado.
+              schema:
+                type: string
+                format: url
+                example: "/api/clubs/123"
+        '400':
+          description: |
+            Requisição inválida.
+            Possíveis causas:
+            - Nome do clube ausente ou inválido.
+            - Arquivo de imagem ausente.
+            - Tipo de arquivo de imagem não suportado.
+            - Tamanho do arquivo de imagem excede o limite.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                missingName:
+                  value:
+                    message: "O campo 'name' é obrigatório."
+                    code: "VALIDATION_ERROR"
+                invalidImageType:
+                  value:
+                    message: "Tipo de arquivo de imagem não suportado. Use JPEG ou PNG."
+                    code: "INVALID_IMAGE_TYPE"
+        '401':
+          description: Não autenticado. Token JWT ausente ou inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: |
+            Acesso negado.
+            Possíveis causas:
+            - Usuário não tem nível 'full'.
+            - Usuário já é administrador de outro clube.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                notFullAccount:
+                  value:
+                    message: "Apenas usuários com conta 'full' podem criar clubes."
+                    code: "INSUFFICIENT_ACCOUNT_LEVEL"
+                adminLimitReached:
+                  value:
+                    message: "Usuário já é administrador do número máximo de clubes permitido (1)."
+                    code: "CLUB_ADMIN_LIMIT_REACHED"
+        '409': # Conflict
+          description: Conflito de dados. Nome do clube já existe.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                clubNameInUse:
+                  value:
+                    message: "O nome de clube 'Guerreiros da Madrugada FC' já está em uso."
+                    code: "CLUB_NAME_ALREADY_EXISTS"
+        '413': # Payload Too Large
+          description: O arquivo de imagem enviado é muito grande.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                imageTooLarge:
+                  value:
+                    message: "O arquivo de imagem excede o tamanho máximo permitido de 100MB."
+                    code: "PAYLOAD_TOO_LARGE"
+        '500':
+          description: Erro interno do servidor (ex falha ao redimensionar imagem, falha ao salvar no blob storage).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/clubs/{clubId}:
+    get:
+      tags:
+        - Clubs
+      summary: Obtém detalhes de um clube específico
+      description: |
+        Retorna informações detalhadas sobre um clube específico, identificado pelo seu `clubId`.
+        Qualquer usuário autenticado pode visualizar as informações de um clube.
+        A resposta inclui informações contextuais sobre a relação do usuário autenticado com o clube (se ele é membro e qual seu cargo).
+        A lista de membros é obtida através de um endpoint separado: `/api/clubs/{clubId}/members`.
+      operationId: getClubById
+      security:
+        - bearerAuth: [] # Requer autenticação
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          description: ID do clube a ser recuperado.
+          schema:
+            type: integer
+            format: int64
+            example: 123
+      responses:
+        '200':
+          description: Detalhes do clube retornados com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Club'
+        '401':
+          description: Não autenticado. Token JWT ausente ou inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Clube não encontrado com o ID fornecido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Clube com ID '123' não encontrado."
+                code: "CLUB_NOT_FOUND"
+        '500':
+          description: Erro interno do servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      tags:
+        - Clubs
+      summary: Atualiza informações de um clube existente
+      description: |
+        Permite que um administrador do clube atualize as informações do clube especificado.
+        Apenas os campos fornecidos na requisição serão atualizados.
+        Para atualizar a imagem do clube, envie um novo arquivo no campo `club_image`.
+      operationId: updateClub
+      security:
+        - bearerAuth: [] # Requer autenticação
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          description: ID do clube a ser atualizado.
+          schema:
+            type: integer
+            format: int64
+            example: 123
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ClubUpdatePayload' # Referencia o schema definido acima
+            encoding:
+              club_image:
+                contentType: image/png, image/jpeg
+      responses:
+        '200':
+          description: Clube atualizado com sucesso. Retorna o objeto do clube atualizado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Club'
+        '400':
+          description: |
+            Requisição inválida.
+            Possíveis causas:
+            - Nome do clube fornecido já existe para outro clube.
+            - Formato de URL inválido para `link_externo`.
+            - Tipo ou tamanho de arquivo de `club_image` inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Não autenticado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Acesso negado. Usuário não é administrador deste clube.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Clube não encontrado com o ID fornecido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409': # Conflict
+          description: Conflito de dados. Nome do clube fornecido já está em uso por outro clube.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                clubNameInUse:
+                  value:
+                    message: "O nome de clube 'Os Invencíveis FC' já está em uso."
+                    code: "CLUB_NAME_ALREADY_EXISTS"
+        '413': # Payload Too Large
+          description: O arquivo de imagem enviado (se houver) é muito grande.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Erro interno do servidor (ex falha ao processar imagem, erro no banco de dados).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Clubs
+      summary: Exclui um clube (Soft Delete)
+      description: |
+        Marca um clube como excluído (Soft Delete).
+        Apenas um administrador do clube pode realizar esta ação.
+        O clube não será permanentemente removido do banco de dados, mas será marcado como `deleted_at` com o timestamp atual
+        e não deverá mais aparecer em listagens ou ser acessível para operações normais.
+        Os membros do clube podem ser marcados como inativos em `clube_membros` ou a lógica de consulta de membros deve considerar o `deleted_at` do clube.
+      operationId: deleteClub
+      security:
+        - bearerAuth: [] # Requer autenticação
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          description: ID do clube a ser excluído.
+          schema:
+            type: integer
+            format: int64
+            example: 123
+      responses:
+        '204': # No Content
+          description: Clube marcado como excluído com sucesso. Nenhum conteúdo é retornado.
+        '401':
+          description: Não autenticado. Token JWT ausente ou inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Acesso negado. Usuário não é administrador deste clube.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Apenas administradores do clube podem excluí-lo."
+                code: "FORBIDDEN_CLUB_DELETION"
+        '404':
+          description: Clube não encontrado com o ID fornecido (ou já marcado como excluído e não visível para esta operação).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Clube com ID '123' não encontrado."
+                code: "CLUB_NOT_FOUND"
+        '500':
+          description: Erro interno do servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/clubs/{clubId}/members:
+    get:
+      tags:
+        - Clubs
+      summary: Lista os membros de um clube específico
+      description: |
+        Retorna uma lista paginada dos membros ativos de um clube específico.
+        Qualquer usuário autenticado pode visualizar a lista de membros de qualquer clube ativo.
+        Permite filtros por cargo no clube e busca por nome/apelido do membro.
+      operationId: listClubMembers
+      security:
+        - bearerAuth: [] # Requer autenticação
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          description: ID do clube para listar os membros.
+          schema:
+            type: integer
+            format: int64
+            example: 123
+        - name: page
+          in: query
+          description: Número da página para a lista de membros.
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: limit
+          in: query
+          description: Número de membros por página.
+          required: false
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 100
+        - name: role # Filtro por cargo
+          in: query
+          description: Filtra membros pelo cargo no clube.
+          required: false
+          schema:
+            type: string
+            enum: [admin, membro, moderador]
+            example: "admin"
+        - name: search # Filtro por nome/apelido
+          in: query
+          description: Termo de busca para filtrar membros por nome ou apelido.
+          required: false
+          schema:
+            type: string
+            example: "Silva"
+        - name: sort_by # Opcional: Ordenação
+          in: query
+          description: Campo para ordenação dos membros.
+          required: false
+          schema:
+            type: string
+            enum: ["name_asc", "name_desc", "joined_at_asc", "joined_at_desc", "role_asc", "role_desc"]
+            default: "name_asc" # Exemplo de default
+            example: "joined_at_desc"
+      responses:
+        '200':
+          description: Lista de membros retornada com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedClubMembersResponse'
+        '400':
+          description: Erro nos parâmetros de query (ex valor de `role` inválido).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Valor inválido para o parâmetro 'role'."
+                code: "INVALID_QUERY_PARAMETER"
+        '401':
+          description: Não autenticado. Token JWT ausente ou inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Clube não encontrado com o ID fornecido ou clube está marcado como excluído.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Clube com ID '123' não encontrado ou foi excluído."
+                code: "CLUB_NOT_FOUND"
+        '500':
+          description: Erro interno do servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags:
+        - Clubs
+        - Club Members
+      summary: Adiciona um usuário como membro de um clube
+      description: |
+        Permite que um administrador do clube (`clubId`) adicione diretamente um usuário existente na plataforma
+        como membro do clube.
+        O usuário a ser adicionado não pode já ser membro ou estar banido.
+        O clube não pode ter atingido seu limite máximo de membros.
+        O novo membro é adicionado com o cargo especificado (padrão 'membro').
+      operationId: addClubMember
+      security:
+        - bearerAuth: [] # Requer autenticação
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          description: ID do clube ao qual o membro será adicionado.
+          schema:
+            type: integer
+            format: int64
+            example: 123
+      requestBody:
+        description: ID do usuário a ser adicionado e, opcionalmente, seu cargo inicial.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddClubMemberRequest'
+            example:
+              userId: 789
+              role: "membro"
+      responses:
+        '201': # Created
+          description: Membro adicionado ao clube com sucesso. Retorna os detalhes do membro no clube.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClubMemberListItem' # Retorna o objeto do novo membro no clube
+          headers:
+            Location:
+              description: URL do recurso do membro do clube recém-criado (ex /api/clubs/{clubId}/members/{userId}).
+              schema:
+                type: string
+                format: url
+        '400':
+          description: |
+            Requisição inválida.
+            Possíveis causas:
+            - `userId` ausente ou inválido.
+            - `role` fornecido inválido (valores permitidos: 'admin', 'membro').
+            - Usuário especificado por `userId` não encontrado no sistema.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                userNotFoundToAdd:
+                  value:
+                    message: "Usuário com ID '789' não encontrado no sistema para ser adicionado."
+                    code: "USER_TO_ADD_NOT_FOUND"
+                invalidRole:
+                  value:
+                    message: "Valor de 'role' inválido. Permitido: 'admin', 'membro'."
+                    code: "INVALID_MEMBER_ROLE"
+        '401':
+          description: Não autenticado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: |
+            Acesso negado ou ação não permitida.
+            Possíveis causas:
+            - Usuário autenticado não é administrador deste clube.
+            - Clube atingiu o limite máximo de membros.
+            - O usuário a ser adicionado já está banido deste clube.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                notClubAdmin:
+                  value:
+                    message: "Apenas administradores do clube podem adicionar membros."
+                    code: "NOT_CLUB_ADMIN"
+                clubFull:
+                  value:
+                    message: "Este clube atingiu o limite máximo de membros."
+                    code: "CLUB_MAX_MEMBERS_REACHED"
+                userBanned:
+                  value:
+                    message: "O usuário especificado está banido deste clube e não pode ser adicionado."
+                    code: "USER_BANNED_CANNOT_BE_ADDED"
+        '404':
+          description: Clube (`clubId`) não encontrado ou foi excluído.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409': # Conflict
+          description: Conflito. O usuário especificado já é membro (ativo) deste clube.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                alreadyMember:
+                  value:
+                    message: "Usuário com ID '789' já é membro deste clube."
+                    code: "USER_ALREADY_CLUB_MEMBER"
+        '500':
+          description: Erro interno do servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  /api/clubs/{clubId}/members/{userId}: # Path atualizado para o recurso membro
+    patch:
+      tags:
+        - Clubs
+        - Club Members
+      summary: Atualiza o cargo/status de um membro do clube
+      description: |
+        Permite que um administrador do clube (`clubId`) altere o cargo (`admin`, `membro`) ou status (`banido`)
+        de um membro específico (`userId`) do clube.
+        Regras de negócio:
+        - Um administrador não pode banir a si mesmo.
+        - Um administrador não pode se rebaixar para 'membro' se for o último administrador do clube.
+      operationId: updateClubMemberStatus
+      security:
+        - bearerAuth: [] # Requer autenticação
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          description: ID do clube.
+          schema:
+            type: integer
+            format: int64
+            example: 123
+        - name: userId # ID do usuário (membro) a ser atualizado
+          in: path
+          required: true
+          description: ID do usuário membro cujo status será atualizado.
+          schema:
+            type: integer
+            format: int64
+            example: 456
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClubMemberUpdateRequest'
+            example:
+              role: "admin"
+      responses:
+        '200':
+          description: Cargo/status do membro atualizado com sucesso. Retorna os detalhes atualizados do membro no clube.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClubMemberListItem' # Retorna o estado atualizado do membro
+        '400':
+          description: |
+            Requisição inválida.
+            Possíveis causas:
+            - Valor de 'role' inválido.
+            - Tentativa de admin se rebaixar sendo o último admin.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidRole:
+                  value:
+                    message: "O valor fornecido para 'role' não é válido. Valores permitidos: admin, membro, banido."
+                    code: "INVALID_ROLE_VALUE"
+                lastAdminDowngrade:
+                  value:
+                    message: "Não é possível rebaixar o último administrador do clube."
+                    code: "LAST_ADMIN_CANNOT_BE_DOWNGRADED"
+        '401':
+          description: Não autenticado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: |
+            Acesso negado.
+            Possíveis causas:
+            - Usuário autenticado não é administrador deste clube.
+            - Administrador tentando banir a si mesmo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                notClubAdmin:
+                  value:
+                    message: "Apenas administradores do clube podem realizar esta ação."
+                    code: "NOT_CLUB_ADMIN"
+                cannotBanSelf:
+                  value:
+                    message: "Um administrador não pode banir a si mesmo."
+                    code: "ADMIN_CANNOT_BAN_SELF"
+        '404':
+          description: Clube (`clubId`) ou Membro (`userId`) não encontrado, ou usuário não é membro do clube especificado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                clubNotFound:
+                  value:
+                    message: "Clube com ID '123' não encontrado."
+                    code: "CLUB_NOT_FOUND"
+                memberNotFound:
+                  value:
+                    message: "Membro com ID '456' não encontrado neste clube."
+                    code: "CLUB_MEMBER_NOT_FOUND"
+        '500':
+          description: Erro interno do servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  
+  /api/clubs/{clubId}/join:
+    post:
+      tags:
+        - Clubs
+        - Club Members
+      summary: Solicita entrada em um clube
+      description: |
+        Permite que um usuário autenticado solicite entrada em um clube específico (`clubId`).
+        - O usuário não pode já ser membro (com cargo 'admin' ou 'membro').
+        - O usuário não pode estar banido (`cargo_no_clube = 'banido'`) deste clube.
+        - O usuário não pode ter outra solicitação pendente para este clube.
+        - O clube não pode ter atingido seu limite máximo de membros (se definido).
+        A solicitação é criada com status 'pendente' e aguarda aprovação de um administrador do clube.
+        Não há corpo (body) para esta requisição.
+      operationId: requestToJoinClub
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          description: ID do clube ao qual o usuário deseja se juntar.
+          schema:
+            type: integer
+            format: int64
+            example: 123
+      responses:
+        '201': # Created
+          description: Solicitação de entrada enviada com sucesso e aguardando aprovação.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClubJoinRequestStatus'
+        '400':
+          description: Requisição inválida.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Não autenticado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: |
+            Ação não permitida.
+            Possíveis causas:
+            - Usuário está banido deste clube.
+            - O clube atingiu o limite máximo de membros e não aceita novas solicitações.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                userBanned: # Renomeado para clareza
+                  value:
+                    message: "Você está banido deste clube e não pode solicitar entrada."
+                    code: "USER_BANNED_FROM_CLUB"
+                clubFull:
+                  value:
+                    message: "Este clube atingiu o limite máximo de membros e não pode aceitar novas solicitações no momento."
+                    code: "CLUB_MAX_MEMBERS_REACHED"
+        '404':
+          description: Clube não encontrado ou foi excluído.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409': # Conflict
+          description: Conflito. O usuário já é membro ou já possui uma solicitação pendente para este clube.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                alreadyMember:
+                  value:
+                    message: "Você já é membro deste clube."
+                    code: "ALREADY_CLUB_MEMBER"
+                pendingRequestExists:
+                  value:
+                    message: "Você já possui uma solicitação pendente para este clube."
+                    code: "PENDING_JOIN_REQUEST_EXISTS"
+        '500':
+          description: Erro interno do servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+                
+  /api/clubs/{clubId}/leave:
+    post:
+      tags:
+        - Clubs
+        - Club Members
+      summary: Permite que um membro saia de um clube
+      description: |
+        Permite que o usuário autenticado, que é um membro ativo do clube especificado,
+        registre sua saída do clube.
+        A saída é registrada marcando o membro como inativo (`ativo = false`) na tabela `clube_membros`.
+
+        Regras de Negócio Importantes:
+        - O usuário deve ser um membro ativo do clube.
+        - Se o usuário for o único administrador do clube, ele não poderá sair.
+          Nesse caso, deve primeiro nomear outro administrador ou excluir o clube.
+      operationId: leaveClub
+      security:
+        - bearerAuth: [] # Requer autenticação
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          description: ID do clube do qual o usuário deseja sair.
+          schema:
+            type: integer
+            format: int64
+            example: 123
+      responses:
+        '204':
+          description: Saída do clube registrada com sucesso. Nenhum conteúdo é retornado.
+        '401':
+          description: Não autenticado. Token JWT ausente ou inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Token de autenticação ausente ou inválido."
+                code: "UNAUTHENTICATED"
+        '403':
+          description: |
+            Ação não permitida.
+            Possíveis causas:
+            - O usuário autenticado não é um membro ativo do clube especificado.
+            - O usuário autenticado é o último administrador do clube e não pode sair sem antes nomear outro administrador ou excluir o clube.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                notMember:
+                  value:
+                    message: "Você não é membro deste clube ou sua associação está inativa."
+                    code: "NOT_CLUB_MEMBER_OR_INACTIVE"
+                lastAdminCannotLeave:
+                  value:
+                    message: "Como último administrador, você não pode sair do clube. Nomeie outro administrador ou exclua o clube."
+                    code: "LAST_ADMIN_CANNOT_LEAVE"
+        '404':
+          description: Clube não encontrado com o ID fornecido ou o clube foi excluído.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Clube com ID '123' não encontrado."
+                code: "CLUB_NOT_FOUND"
+        '500':
+          description: Erro interno do servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/clubs/{clubId}/join-requests/{requestId}/approve:
+    post:
+      tags:
+        - Clubs
+        - Club Members
+      summary: Aprova uma solicitação pendente de entrada em um clube
+      description: |
+        Permite que um administrador do clube (`clubId`) aprove uma solicitação de entrada específica (`requestId`)
+        que esteja com o status 'pendente'. Ao aprovar, o usuário solicitante se torna um membro do clube.
+
+        **Interações no Banco de Dados e Fluxo de Dados/Ações:**
+        1.  Valida a existência do `clubId` (tabela `clubes`) e do `requestId` (tabela `clube_solicitacoes_entrada`).
+        2.  Verifica se o usuário autenticado é administrador do `clubId` (tabelas `usuarios`, `clube_membros`).
+        3.  Recupera a solicitação de `clube_solicitacoes_entrada` verificando se pertence ao `clubId` e se `status_solicitacao = 'pendente'`. Obtém o `usuario_id` do solicitante.
+        4.  Verifica se o número atual de membros ativos em `clube_membros` é menor que `clubes.max_membros`.
+        5.  Verifica se o `usuario_id` solicitante não possui já um registro ativo (`ativo = TRUE`) em `clube_membros` para este `clubId`.
+        6.  Verifica se o `usuario_id` solicitante não possui um registro com `cargo_no_clube = 'banido'` em `clube_membros` para este `clubId`.
+        7.  **Inicia Transação:**
+            a.  Atualiza `clube_solicitacoes_entrada`:
+                - `status_solicitacao = 'aprovada'`
+                - `data_decisao = NOW()`
+                - `decidido_por_admin_id = {ID do admin autenticado}`
+            b.  Adiciona/Reativa em `clube_membros`:
+                - Se existe registro para `(clubId, usuario_id)` com `ativo = FALSE` e `cargo_no_clube != 'banido'`:
+                  `UPDATE clube_membros SET ativo = TRUE, cargo_no_clube = 'membro', data_entrada = NOW() WHERE clube_id = :clubId AND usuario_id = :solicitanteId;`
+                - Se não existe registro:
+                  `INSERT INTO clube_membros (clube_id, usuario_id, cargo_no_clube, data_entrada, ativo) VALUES (:clubId, :solicitanteId, 'membro', NOW(), TRUE);`
+        8.  **Finaliza Transação.**
+        9.  (Opcional) Dispara notificação para o usuário solicitante.
+
+        **Lógica de Implementação e Regras de Negócio:**
+        - O usuário autenticado deve ser um administrador ativo do clube.
+        - O clube especificado deve existir e não estar marcado como excluído.
+        - A solicitação de entrada (`requestId`) deve existir, pertencer ao clube, e estar com status 'pendente'.
+        - O clube não pode ter atingido seu limite máximo de membros (`max_membros`, default 50). Se lotado, a aprovação falha (409 Conflict).
+        - O usuário solicitante não pode já ser um membro ativo do clube. Se já for, a aprovação falha (409 Conflict).
+        - O usuário solicitante não pode estar banido do clube. Se estiver, a aprovação falha (403 Forbidden), e a solicitação é marcada como 'rejeitada'.
+        - As operações de atualização da solicitação e adição/reativação do membro devem ser atômicas (dentro de uma transação).
+      operationId: approveClubJoinRequest
+      security:
+        - bearerAuth: [] # Requer autenticação
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          description: ID do clube.
+          schema:
+            type: integer
+            format: int64
+            example: 123
+        - name: requestId
+          in: path
+          required: true
+          description: ID da solicitação de entrada a ser aprovada.
+          schema:
+            type: integer
+            format: int64
+            example: 789
+      responses:
+        '204':
+          description: Solicitação de entrada aprovada com sucesso. Usuário agora é membro do clube.
+        '400':
+          description: |
+            Requisição inválida.
+            Possíveis causas:
+            - A solicitação (`requestId`) não está com status 'pendente'.
+            - A solicitação não pertence ao `clubId` especificado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                requestNotPending:
+                  value:
+                    message: "A solicitação de entrada não está pendente e não pode ser aprovada."
+                    code: "REQUEST_NOT_PENDING"
+        '401':
+          description: Não autenticado. Token JWT ausente ou inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: |
+            Acesso negado ou ação não permitida.
+            Possíveis causas:
+            - Usuário autenticado não é administrador deste clube.
+            - Tentativa de aprovar uma solicitação para um usuário que está banido do clube.
+              (Neste caso, a solicitação também será marcada como 'rejeitada').
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                notClubAdmin:
+                  value:
+                    message: "Apenas administradores do clube podem aprovar solicitações de entrada."
+                    code: "NOT_CLUB_ADMIN"
+                userIsBanned:
+                  value:
+                    message: "O usuário solicitante está banido deste clube e não pode ser aprovado."
+                    code: "USER_BANNED_CANNOT_JOIN"
+        '404':
+          description: |
+            Recurso não encontrado.
+            Possíveis causas:
+            - Clube (`clubId`) não encontrado.
+            - Solicitação de entrada (`requestId`) não encontrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                clubNotFound:
+                  value:
+                    message: "Clube com ID '123' não encontrado."
+                    code: "CLUB_NOT_FOUND"
+                requestNotFound:
+                  value:
+                    message: "Solicitação de entrada com ID '789' não encontrada."
+                    code: "JOIN_REQUEST_NOT_FOUND"
+        '409': # Conflict
+          description: |
+            Conflito ao tentar aprovar a solicitação.
+            Possíveis causas:
+            - O clube atingiu o número máximo de membros.
+            - O usuário solicitante já é um membro ativo do clube.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                clubIsFull:
+                  value:
+                    message: "O clube está lotado e não pode aceitar novos membros no momento."
+                    code: "CLUB_MAX_MEMBERS_REACHED"
+                userAlreadyMember:
+                  value:
+                    message: "O usuário solicitante já é membro deste clube."
+                    code: "USER_ALREADY_CLUB_MEMBER"
+        '500':
+          description: Erro interno do servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/clubs/{clubId}/join-requests/{requestId}/reject:
+    post:
+      tags:
+        - Clubs
+        - Club Members
+      summary: Rejeita uma solicitação pendente de entrada em um clube
+      description: |
+        Permite que um administrador do clube (`clubId`) rejeite uma solicitação de entrada específica (`requestId`)
+        que esteja com o status 'pendente'.
+
+        **Interações no Banco de Dados e Fluxo de Dados/Ações:**
+        1.  Validar `clubId` e `requestId`.
+        2.  Verificar se o usuário autenticado é admin do `clubId` (tabelas `usuarios`, `clube_membros`).
+        3.  Recuperar a solicitação de `clube_solicitacoes_entrada` verificando se pertence ao `clubId` e se `status_solicitacao = 'pendente'`.
+        4.  **Inicia Transação:**
+            a.  Atualizar `clube_solicitacoes_entrada`:
+                - `status_solicitacao = 'rejeitada'`
+                - `data_decisao = NOW()`
+                - `decidido_por_admin_id = {ID do admin autenticado}`
+        5.  **Finaliza Transação.**
+        6.  (Opcional) Dispara notificação para o usuário solicitante informando a rejeição.
+
+        **Lógica de Implementação e Regras de Negócio:**
+        - O usuário autenticado deve ser um administrador ativo do clube.
+        - O clube especificado deve existir e não estar marcado como excluído.
+        - A solicitação de entrada (`requestId`) deve existir, pertencer ao clube, e estar com status 'pendente'.
+          Se já estiver 'aprovada' ou 'rejeitada', a ação deve falhar (400 Bad Request ou 409 Conflict).
+        - As operações de atualização da solicitação devem ser atômicas (dentro de uma transação).
+      operationId: rejectClubJoinRequest
+      security:
+        - bearerAuth: [] # Requer autenticação
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          description: ID do clube.
+          schema:
+            type: integer
+            format: int64
+            example: 123
+        - name: requestId
+          in: path
+          required: true
+          description: ID da solicitação de entrada a ser rejeitada.
+          schema:
+            type: integer
+            format: int64
+            example: 789
+      # Não há requestBody, pois o motivo foi removido.
+      responses:
+        '204':
+          description: Solicitação de entrada rejeitada com sucesso.
+        '400':
+          description: |
+            Requisição inválida.
+            Possíveis causas:
+            - A solicitação (`requestId`) não está com status 'pendente'.
+            - A solicitação não pertence ao `clubId` especificado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                requestNotPending:
+                  value:
+                    message: "A solicitação de entrada não está pendente e não pode ser rejeitada."
+                    code: "REQUEST_NOT_PENDING"
+        '401':
+          description: Não autenticado. Token JWT ausente ou inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Acesso negado. Usuário autenticado não é administrador deste clube.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                notClubAdmin:
+                  value:
+                    message: "Apenas administradores do clube podem rejeitar solicitações de entrada."
+                    code: "NOT_CLUB_ADMIN"
+        '404':
+          description: |
+            Recurso não encontrado.
+            Possíveis causas:
+            - Clube (`clubId`) não encontrado.
+            - Solicitação de entrada (`requestId`) não encontrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                clubNotFound:
+                  value:
+                    message: "Clube com ID '123' não encontrado."
+                    code: "CLUB_NOT_FOUND"
+                requestNotFound:
+                  value:
+                    message: "Solicitação de entrada com ID '789' não encontrada."
+                    code: "JOIN_REQUEST_NOT_FOUND"
+        '409': # Conflict
+          description: |
+            Conflito ao tentar rejeitar a solicitação.
+            Isso pode ocorrer se a solicitação já foi processada (aprovada ou rejeitada) em outra requisição.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                requestAlreadyProcessed:
+                  value:
+                    message: "Esta solicitação de entrada já foi processada."
+                    code: "REQUEST_ALREADY_PROCESSED"
+        '500':
+          description: Erro interno do servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  /api/arenas/{establishmentId}: # Renomeado o path parameter para clareza
+    get:
+      tags:
+        - Arenas Management # Indica que é para gestão de estabelecimentos/arenas
+      summary: Obtém detalhes de um estabelecimento e seus locais
+      description: |
+        Retorna informações detalhadas sobre um estabelecimento específico e uma lista resumida
+        de todos os locais (arenas físicas) que pertencem a ele.
+        Este endpoint é restrito a usuários que são administradores do estabelecimento solicitado.
+
+        **Interações no Banco de Dados e Fluxo de Dados/Ações:**
+        1.  O `establishmentId` é recebido.
+        2.  Verifica se o usuário autenticado é administrador do `establishmentId` (tabelas `usuarios`, `admin_estabelecimento`).
+        3.  Busca o registro na tabela `estabelecimentos` usando o `establishmentId`.
+        4.  Busca todos os `locais` associados a este `establishmentId` na tabela `locais`.
+        5.  Para cada local, calcula a contagem de quadras (`SELECT COUNT(*) FROM quadras WHERE local_id = X`).
+        6.  Busca as formas de pagamento do estabelecimento em `estabelecimento_formas_pagamento`.
+        7.  Agrega todas essas informações (estabelecimento, lista de locais com contagem de quadras, formas de pagamento) na resposta.
+
+        **Lógica de Implementação e Regras de Negócio:**
+        - O usuário autenticado deve ser um administrador (`admin_estabelecimento`) do `establishmentId` fornecido.
+        - Se o `establishmentId` não for encontrado, retorna 404.
+        - Se o usuário não for administrador do estabelecimento, retorna 403 Forbidden.
+        - O `tax_id` do estabelecimento é incluído na resposta, pois o endpoint é para administradores autorizados.
+      operationId: getEstablishmentDetailsById
+      security:
+        - bearerAuth: [] # Requer autenticação
+      parameters:
+        - name: establishmentId # Renomeado
+          in: path
+          required: true
+          description: ID do estabelecimento para recuperar os detalhes.
+          schema:
+            type: integer
+            format: int64
+            example: 1
+      responses:
+        '200':
+          description: Detalhes do estabelecimento e seus locais retornados com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EstablishmentDetailsResponse'
+        '401':
+          description: Não autenticado. Token JWT ausente ou inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Acesso negado. O usuário autenticado não é administrador do estabelecimento solicitado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Usuário não autorizado a acessar detalhes deste estabelecimento."
+                code: "FORBIDDEN_ESTABLISHMENT_ACCESS"
+        '404':
+          description: Estabelecimento não encontrado com o ID fornecido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Estabelecimento com ID '1' não encontrado."
+                code: "ESTABLISHMENT_NOT_FOUND"
+        '500':
+          description: Erro interno do servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/arenas/{localId}/available-hours:
+    get:
+      tags:
+        - Arenas
+        - Availability
+      summary: Retorna a disponibilidade de horários de todas as quadras de um local
+      description: |
+        Para um local específico (`localId`), uma data (`date`), e um intervalo de tempo opcional (`interval`),
+        retorna uma visão consolidada da disponibilidade para todas as quadras.
+        Isso inclui horários livres, horários bloqueados, e detalhes de listas/reservas existentes,
+        incluindo status, ocupação e valores arrecadados.
+        Requer autenticação de usuário.
+
+        **Status dos Slots de Tempo (`time_slots.status`):**
+        - `available`: Horário livre e operacional.
+        - `unavailable_operational`: Fora do horário de funcionamento regular da quadra ou bloqueado por uma exceção de indisponibilidade.
+        - `contested`: O slot está coberto por uma ou mais listas nos estados `VAZIA`, `ABERTA`, ou `EM DISPUTA`.
+        - `prioritized`: O slot está coberto por uma lista no estado `ESPERANDO`.
+        - `booked`: O slot está coberto por uma lista no estado `RESERVADO`.
+        - `past_reservation`: O slot está coberto por uma lista `CONCLUIDO`.
+
+        **Interações no Banco de Dados e Fluxo de Dados/Ações:**
+        1.  Valida `localId`, `date`, e `interval`.
+        2.  Para cada quadra pertencente ao `localId`:
+            a.  Gera uma grade de slots de tempo para a `date` com base no `interval`.
+            b.  Para cada slot:
+                i.  Verifica `quadras_horarios` (funcionamento regular).
+                ii. Verifica `quadras_horarios_excepcionais` (bloqueios/aberturas).
+                iii.Consulta `reservas` que se sobrepõem ao slot para a quadra e data.
+                    - Para cada reserva encontrada, coleta `id`, `status_id`, `modalidade`, `min_pagantes`.
+                    - Se `usuario_id` não for nulo, busca `usuarios.apelido`.
+                    - Se `clube_id` não for nulo, busca `clubes.nome`.
+                    - Calcula `current_paid_payers` e `pending_payment_payers` a partir de `reserva_usuarios` (considerando `reserva_usuarios.status`).
+                    - Calcula `total_value_collected_so_far` a partir de `reserva_usuarios.price` (para os pagos).
+                    - Calcula `occupation_percentage_paid`.
+                iv. Determina o `time_slots.status` consolidado com base nas reservas encontradas e na operacionalidade do horário.
+        3.  Agrega os resultados por quadra e formata a resposta.
+
+        **Lógica de Implementação e Regras de Negócio:**
+        - Usuário deve estar autenticado.
+        - `localId` deve existir.
+        - `date` deve ser válida.
+        - `interval` (default 60 minutos) deve ser um valor razoável (ex: 15, 30, 60, 90, 120).
+        - A lógica de prioridade para determinar o `time_slots.status` geral quando múltiplas reservas (com diferentes `reservas.status_id`) ocupam o mesmo slot de API precisa ser definida (ex: `RESERVADO` > `ESPERANDO` > `EM DISPUTA` > `ABERTA` > `VAZIA`). Todas as listas sobrepostas são retornadas em `competing_lists`.
+      operationId: getArenaLocalAvailableHours
+      security:
+        - bearerAuth: [] # Requer autenticação
+      parameters:
+        - name: localId
+          in: path
+          required: true
+          description: ID do local (arena) para verificar a disponibilidade.
+          schema:
+            type: integer
+            format: int64
+            example: 1
+        - name: date
+          in: query
+          required: true
+          description: Data para a qual a disponibilidade será verificada (YYYY-MM-DD).
+          schema:
+            type: string
+            format: date
+            example: "2024-08-15"
+        - name: interval # Renomeado de slot_interval_minutes
+          in: query
+          required: false
+          description: Granularidade dos slots de tempo em minutos.
+          schema:
+            type: integer
+            default: 60
+            enum: [15, 30, 45, 60, 90, 120] # Exemplo de valores permitidos
+            example: 30
+      responses:
+        '200':
+          description: Disponibilidade de horários retornada com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArenaAvailableHoursResponse'
+        '400':
+          description: Parâmetros de requisição inválidos (ex data em formato incorreto, intervalo inválido).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Não autenticado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Local (`localId`) não encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Erro interno do servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  /api/search/available-courts:
+    get:
+      tags:
+        - Search
+        - Arenas
+        - Availability
+      summary: Busca quadras disponíveis em diferentes locais com base em critérios
+      description: |
+        Retorna uma lista paginada de quadras disponíveis que atendem aos critérios de data, hora,
+        duração e cidade. Opcionalmente, pode filtrar por uma modalidade específica.
+        Apenas quadras que estão operacionalmente disponíveis e não possuem reservas bloqueantes
+        (status ESPERANDO, RESERVADO, CONCLUIDO) no horário solicitado são consideradas.
+        Requer autenticação de usuário.
+
+        **Status do Slot de Tempo na Resposta (`availability_slot_info.slot_status`):**
+        - `available`: O horário solicitado está totalmente livre na quadra.
+        - `available_with_competition`: O horário está livre, mas já existem listas/reservas com status VAZIA, ABERTA ou EM DISPUTA para ele. Detalhes dessas listas são fornecidos.
+
+        **Interações no Banco de Dados e Fluxo de Dados/Ações:**
+        1.  Valida os parâmetros de busca: `city`, `date`, `time`, `duration`, `modality_id` (opcional).
+        2.  Filtra `locais` pela `city`.
+        3.  Para cada local, busca suas `quadras`. Se `modality_id` for fornecido, filtra as quadras que suportam essa modalidade (via tabela `quadra_possui_modalidades`).
+        4.  Para cada quadra candidata, calcula o intervalo de tempo solicitado (`startTime` a `endTime`).
+        5.  **Filtro de Operacionalidade:** Verifica se a quadra está operacional durante todo o `startTime` a `endTime` (usando `quadras_horarios` e `quadras_horarios_excepcionais`). Descarta se não estiver.
+        6.  **Filtro de Reservas Bloqueantes:** Verifica se existem `reservas` para a quadra no intervalo com status `ESPERANDO`, `RESERVADO` ou `CONCLUIDO`. Descarta se houver.
+        7.  **Verificação de Listas Concorrentes:** Para as quadras restantes, verifica se existem `reservas` com status `VAZIA`, `ABERTA` ou `EM DISPUTA` no intervalo.
+            a.  Se não houver, o `slot_status` é `available`.
+            b.  Se houver, o `slot_status` é `available_with_competition`, e os detalhes dessas listas são coletados (ID, status, % ocupação, pagantes, etc.).
+        8.  Coleta informações adicionais da quadra (nome, foto, modalidades suportadas), do local (nome, endereço) e do estabelecimento (nome).
+        9.  Estima o `estimated_price_per_person` (lógica a ser definida).
+        10. Pagina os resultados e formata a resposta.
+
+        **Lógica de Implementação e Regras de Negócio:**
+        - Usuário deve estar autenticado.
+        - Todos os parâmetros de busca obrigatórios (`city`, `date`, `time`, `duration`) devem ser válidos.
+        - A busca é restrita à `city` fornecida.
+        - O `estimated_price_per_person` é uma estimativa e pode ser `null`.
+        - A ordenação dos resultados primários é deixada para o cliente; a API retorna os resultados paginados conforme encontrados (ou por uma ordenação padrão do BD, ex: por ID de quadra/local).
+      operationId: searchAvailableCourts
+      security:
+        - bearerAuth: [] # Requer autenticação
+      parameters:
+        - name: date
+          in: query
+          required: true
+          description: Data desejada para a reserva (YYYY-MM-DD).
+          schema:
+            type: string
+            format: date
+            example: "2024-09-10"
+        - name: time
+          in: query
+          required: true
+          description: Horário de início desejado (HH:MM, formato 24h).
+          schema:
+            type: string
+            pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
+            example: "19:30"
+        - name: duration
+          in: query
+          required: true
+          description: Duração desejada da reserva em minutos.
+          schema:
+            type: integer
+            example: 90
+        - name: city
+          in: query
+          required: true
+          description: Nome da cidade onde buscar as quadras.
+          schema:
+            type: string
+            example: "São Paulo"
+        - name: modality_id
+          in: query
+          required: false
+          description: ID da modalidade desejada para filtrar as quadras.
+          schema:
+            type: integer
+            example: 1
+        - name: page
+          in: query
+          required: false
+          description: Número da página para os resultados.
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: limit
+          in: query
+          required: false
+          description: Número de resultados por página.
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 50 # Limite máximo para evitar sobrecarga
+      responses:
+        '200':
+          description: Lista de quadras disponíveis retornada com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAvailableCourtsResponse'
+        '400':
+          description: Parâmetros de requisição inválidos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Não autenticado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Erro interno do servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/rents:
+    get:
+      tags:
+        - Rents
+        - User Profile
+      summary: Lista as reservas/aluguéis do usuário autenticado
+      description: |
+        Retorna uma lista paginada de todas as "listas de aluguel" (reservas)
+        com as quais o usuário autenticado tem envolvimento, seja como organizador
+        (`reservas.usuario_id`) ou como participante (presente em `reserva_usuarios`).
+        As reservas são ordenadas pela data de início, das mais próximas para as mais distantes.
+        Permite filtros por status da reserva e pelo papel do usuário na reserva.
+
+        **Interações no Banco de Dados e Fluxo de Dados/Ações:**
+        1.  Identifica o usuário autenticado (`auth_user_id`).
+        2.  Constrói a consulta base para `reservas` aplicando join com `quadras`, `locais`, `estabelecimentos` (para logo), `usuarios` (para apelido do organizador), `clubes` (para nome do clube).
+        3.  Filtra as reservas:
+            - `WHERE (reservas.usuario_id = :auth_user_id OR EXISTS (SELECT 1 FROM reserva_usuarios ru WHERE ru.reserva_id = reservas.id AND ru.usuario_id = :auth_user_id))`
+            - Aplica filtro opcional de `status` (em `reservas.status_id`).
+            - Aplica filtro opcional de `role`:
+                - Se `role=organizer`, adiciona `AND reservas.usuario_id = :auth_user_id`.
+                - Se `role=participant`, adiciona `AND EXISTS (SELECT 1 FROM reserva_usuarios ru WHERE ru.reserva_id = reservas.id AND ru.usuario_id = :auth_user_id AND ru.role = 'jogador')`.
+        4.  Para cada reserva resultante, calcula:
+            - `current_paid_payers` e `pending_payment_payers` a partir de `reserva_usuarios`.
+            - Determina `user_role_in_reservation`.
+            - Seleciona a `logo_url` correta (do local ou do estabelecimento).
+        5.  Ordena os resultados por `reservas.inicio DESC`.
+        6.  Aplica paginação (`LIMIT` e `OFFSET`).
+        7.  Formata a resposta.
+
+        **Lógica de Implementação e Regras de Negócio:**
+        - Requer autenticação de usuário.
+        - O filtro `status` pode aceitar um ou múltiplos valores (ex: "ABERTA,EM DISPUTA").
+        - A ordenação é fixa por data de início da reserva, decrescente.
+        - `organizer_details` é omitido se o próprio usuário autenticado for o organizador, ou se `reservas.usuario_id` for `NULL` (lista `VAZIA` ainda não assumida por um jogador).
+        - `club_details` é omitido se `reservas.clube_id` for `NULL`.
+      operationId: listUserRents
+      security:
+        - bearerAuth: [] # Requer autenticação
+      parameters:
+        - name: page
+          in: query
+          required: false
+          description: Número da página para os resultados.
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: limit
+          in: query
+          required: false
+          description: Número de resultados por página.
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 50
+        - name: status
+          in: query
+          required: false
+          description: |
+            Filtra as reservas por status. Pode ser um único status ou múltiplos status separados por vírgula.
+            Valores possíveis: VAZIA, ABERTA, EM DISPUTA, ESPERANDO, RESERVADO, PERDIDO, CANCELADA, CANCELADA_PELA_ARENA, CONCLUIDO.
+          schema:
+            type: string
+            example: "ABERTA,EM DISPUTA"
+        - name: role
+          in: query
+          required: false
+          description: Filtra as reservas pelo papel do usuário nelas.
+          schema:
+            type: string
+            enum: [organizer, participant] # Se omitido, retorna ambos os papéis
+            example: "organizer"
+      responses:
+        '200':
+          description: Lista de reservas/aluguéis do usuário retornada com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserRentsResponse'
+        '400':
+          description: Parâmetros de requisição inválidos (ex status inválido, formato de filtro incorreto).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Não autenticado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Erro interno do servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

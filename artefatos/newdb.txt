@@ -1,0 +1,529 @@
+-- ==========================================
+-- Arquivo: sports_modalities (NOVA SEÇÃO PRIMEIRO PARA FKs)
+-- ==========================================
+
+-- Tabela de Esportes: Armazena os tipos de esportes disponíveis no sistema.
+CREATE TABLE esportes (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(100) UNIQUE NOT NULL,
+    descricao TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Tabela de Modalidades: Armazena as modalidades específicas de cada esporte.
+CREATE TABLE modalidades (
+    id SERIAL PRIMARY KEY,
+    esporte_id INT NOT NULL,
+    nome VARCHAR(100) NOT NULL,
+    descricao TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    FOREIGN KEY (esporte_id) REFERENCES esportes(id) ON DELETE CASCADE,
+    UNIQUE (esporte_id, nome)
+);
+
+-- ==========================================
+-- Arquivo: create_users_credentials (20250324200245)
+-- ==========================================
+
+-- Tabela de usuarios
+CREATE TABLE usuarios (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(100),
+    cpf VARCHAR(14) UNIQUE,
+    apelido VARCHAR(50) UNIQUE,
+    is_guest BOOLEAN NOT NULL DEFAULT FALSE,
+    foto TEXT,
+    reputacao INT DEFAULT 100 CHECK (reputacao BETWEEN 0 AND 100),
+    modalidade_preferida_id INT,
+    local_padrao_gestao_id INT NULL,
+    FOREIGN KEY (modalidade_preferida_id) REFERENCES modalidades(id) ON DELETE SET NULL,
+    FOREIGN KEY (local_padrao_gestao_id) REFERENCES locais(id) ON DELETE SET NULL 
+);
+
+-- Tabela de credenciais dos usuários
+CREATE TABLE credenciais (
+    id SERIAL PRIMARY KEY,
+    usuario_id INT NOT NULL UNIQUE,
+    email VARCHAR(255) UNIQUE,
+    email_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    phone_number VARCHAR(20),
+    phone_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    oauth_provider VARCHAR(50),
+    oauth_provider_id VARCHAR(255),
+    password_hash VARCHAR(255),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+);
+
+-- Tabela de contas (Pix ou cartão) para pagamentos
+CREATE TABLE contas (
+    id SERIAL PRIMARY KEY,
+    is_verified BOOLEAN DEFAULT FALSE,
+    verificado_em TIMESTAMP WITH TIME ZONE NULL,
+    is_active BOOLEAN DEFAULT TRUE, -- <<<< ADICIONADO: Se o método (ex: token do cartão) está globalmente ativo/válido.
+    tipo VARCHAR(20) NOT NULL CHECK (tipo IN ('pix', 'cartao')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+
+-- Detalhes para métodos de pagamento do tipo CARTÃO (adaptado ao seu exemplo)
+CREATE TABLE contas_cartao_cadastradas (
+    contas_id INT PRIMARY KEY,               -- PK e FK para metodos_pagamento_cadastrados.id
+    gateway_payment_token VARCHAR(255) NOT NULL UNIQUE, -- O token reutilizável do gateway (ex: Efí payment_token)
+    card_mask VARCHAR(20) NOT NULL,                    -- A máscara do cartão (ex: XXXXXXXXXXXX1234) para exibição
+    brand VARCHAR(50) NOT NULL,                        -- Bandeira do cartão (ex: 'visa', 'mastercard')
+    card_holder_name VARCHAR(255) NULL,                -- Nome do titular do cartão
+    card_expiration_month VARCHAR(2) NULL,             -- Mês de expiração (MM) (Pode vir do gateway ou ser inputado)
+    card_expiration_year VARCHAR(4) NULL,              -- Ano de expiração (YYYY) (Pode vir do gateway ou ser inputado)
+    apelido_cartao VARCHAR(100) NULL,                  -- Um nome opcional para o cartão (ex: "Meu Cartão Principal")
+    -- is_default BOOLEAN DEFAULT FALSE,             -- MOVIDO para usuarios_metodos_pagamento
+    -- is_active BOOLEAN DEFAULT TRUE,               -- is_active geral está em metodos_pagamento_cadastrados.id
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    FOREIGN KEY (contas_id) REFERENCES contas(id) ON DELETE CASCADE
+);
+
+-- Detalhes para métodos de pagamento do tipo PIX
+CREATE TABLE contas_pix_cadastradas (
+    contas_id INT PRIMARY KEY,
+    pix_key_type VARCHAR(50) NOT NULL,
+    pix_key_value VARCHAR(255) NOT NULL UNIQUE,
+    bank_name VARCHAR(100) NULL,
+    bank_branch_code VARCHAR(10) NULL,
+    bank_account_number VARCHAR(20) NULL,
+    holder_name VARCHAR(255) NULL,
+    holder_tax_id VARCHAR(20) NULL,
+    apelido_pix VARCHAR(100) NULL,                    -- Um nome opcional para a chave PIX
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    FOREIGN KEY (contas_id) REFERENCES contas(id) ON DELETE CASCADE
+);
+
+-- Tabela de relacionamento entre usuários e contas
+CREATE TABLE usuarios_contas (
+    usuario_id INT NOT NULL,
+    conta_id INT NOT NULL,
+    data_cadastro TIMESTAMP NOT NULL DEFAULT NOW(),
+    ativo BOOLEAN NOT NULL DEFAULT TRUE,
+    is_default BOOLEAN NOT NULL DEFAULT FALSE, -- ADICIONADO: Para indicar método de pagamento padrão do usuário
+    PRIMARY KEY (usuario_id, conta_id),
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    FOREIGN KEY (conta_id) REFERENCES contas(id) ON DELETE CASCADE
+);
+
+-- ==========================================
+-- Arquivo: roles (20250329040057)
+-- ==========================================
+
+-- Tabela de papéis do sistema
+CREATE TABLE niveis (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(50) UNIQUE NOT NULL,
+    descricao TEXT NOT NULL
+);
+
+-- Tabela de associação entre usuários e papéis
+CREATE TABLE usuario_niveis (
+    usuario_id INT NOT NULL,
+    niveis_id INT NOT NULL,
+    data_atribuicao TIMESTAMP NOT NULL DEFAULT NOW(),
+    ativo BOOLEAN NOT NULL DEFAULT TRUE,
+    PRIMARY KEY (usuario_id, niveis_id),
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    FOREIGN KEY (niveis_id) REFERENCES niveis(id) ON DELETE CASCADE
+);
+
+INSERT INTO niveis (nome, descricao) VALUES
+    ('full', 'acesso completo ao sistema'),
+    ('conta pix', 'acesso restrito'),
+    ('visitante', 'apenas acesso aos dados publicos');
+
+-- ==========================================
+-- Arquivo: arenas_data (20250330164222)
+-- ==========================================
+
+-- Tabela de estabelecimentos que gerenciam os locais
+CREATE TABLE estabelecimentos (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    tax_id VARCHAR(50) UNIQUE NOT NULL,
+    tipo VARCHAR(20) NOT NULL CHECK (tipo IN ('publico', 'privado')),
+    pais VARCHAR(50) NOT NULL,
+    logo_url TEXT NULL
+);
+
+CREATE TABLE estabelecimento_formas_pagamento (
+    id SERIAL PRIMARY KEY,
+    estabelecimento_id INT NOT NULL,
+    tipo_pagamento VARCHAR(20) NOT NULL CHECK (tipo_pagamento IN ('pix', 'cartao', 'transferencia')),
+    identificador VARCHAR(255) NOT NULL,
+    verificado BOOLEAN NOT NULL DEFAULT FALSE,
+    data_verificacao TIMESTAMP,
+    observacoes TEXT,
+    FOREIGN KEY (estabelecimento_id) REFERENCES estabelecimentos(id) ON DELETE CASCADE
+);
+
+CREATE TABLE locais (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    rua VARCHAR(255) NOT NULL,
+    numero VARCHAR(50) NOT NULL,
+    complemento VARCHAR(255),
+    bairro VARCHAR(100) NOT NULL,
+    cidade VARCHAR(100) NOT NULL,
+    estado VARCHAR(100) NOT NULL,
+    codigo_postal VARCHAR(20) NOT NULL,
+    pais VARCHAR(50) NOT NULL,
+    latitude DECIMAL(10,7) NOT NULL,
+    longitude DECIMAL(10,7) NOT NULL,
+    estabelecimento_id INT NOT NULL,
+    logo_url TEXT NULL, 
+    FOREIGN KEY (estabelecimento_id) REFERENCES estabelecimentos(id) ON DELETE CASCADE
+);
+
+CREATE TABLE quadras (
+    id SERIAL PRIMARY KEY,
+    local_id INT NOT NULL,
+    nome VARCHAR(100) NOT NULL,
+    photo_url TEXT,
+    UNIQUE(local_id, nome),
+    FOREIGN KEY (local_id) REFERENCES locais(id) ON DELETE CASCADE
+);
+
+CREATE TABLE quadra_possui_modalidades (
+    quadra_id INT NOT NULL,
+    modalidade_id INT NOT NULL,
+    PRIMARY KEY (quadra_id, modalidade_id),
+    FOREIGN KEY (quadra_id) REFERENCES quadras(id) ON DELETE CASCADE,
+    FOREIGN KEY (modalidade_id) REFERENCES modalidades(id) ON DELETE CASCADE
+);
+
+CREATE TABLE quadras_horarios (
+    id SERIAL PRIMARY KEY,
+    quadra_id INT NOT NULL,
+    dia_semana VARCHAR(10) NOT NULL,
+    horario_inicio TIME NOT NULL,
+    horario_fim TIME NOT NULL,
+    CHECK (horario_fim > horario_inicio),
+    CHECK (dia_semana IN ('domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado')),
+    FOREIGN KEY (quadra_id) REFERENCES quadras(id) ON DELETE CASCADE
+);
+
+CREATE TABLE quadras_horarios_excepcionais (
+    id SERIAL PRIMARY KEY,
+    quadra_id INT NOT NULL,
+    data DATE NOT NULL,
+    horario_inicio TIME NOT NULL,
+    horario_fim TIME NOT NULL,
+    disponivel BOOLEAN DEFAULT TRUE, -- A tabela de "horários excepcionais" pode servir para duas finalidades principais:
+    -- Bloquear um horário que normalmente estaria disponível: Ex: manutenção da quadra, evento privado. Neste caso, disponivel seria FALSE.
+    -- Abrir um horário que normalmente estaria fechado: Ex: abrir em um feriado onde a quadra estaria fechada pela regra de quadras_horarios. Neste caso, disponivel seria TRUE.
+    motivo TEXT NULL, -- ADICIONADO: Para explicar a exceção
+    CHECK (horario_fim > horario_inicio),
+    FOREIGN KEY (quadra_id) REFERENCES quadras(id) ON DELETE CASCADE,
+    UNIQUE (quadra_id, data, horario_inicio)
+);
+
+CREATE TABLE admin_estabelecimento (
+    usuario_id INT NOT NULL,
+    estabelecimento_id INT NOT NULL,
+    cargo VARCHAR(50) NOT NULL,
+    data_inicio TIMESTAMP NOT NULL DEFAULT NOW(),
+    data_fim TIMESTAMP NULL,
+    PRIMARY KEY (usuario_id, estabelecimento_id),
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    FOREIGN KEY (estabelecimento_id) REFERENCES estabelecimentos(id) ON DELETE CASCADE
+);
+
+-- ==========================================
+-- Arquivo: clubs_data (NOVA SEÇÃO)
+-- ==========================================
+
+-- Tabela de Clubes
+CREATE TABLE clubes (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(150) NOT NULL UNIQUE,
+    descricao TEXT,
+    photo_url TEXT,
+    cidade VARCHAR(100),
+    estado VARCHAR(100),
+    max_membros INT DEFAULT 50,
+    link_externo TEXT NULL,
+    data_criacao_clube TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    criado_por_usuario_id INT,
+    deleted_at TIMESTAMP WITH TIME ZONE NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    FOREIGN KEY (criado_por_usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL
+);
+
+CREATE INDEX idx_clubes_not_deleted ON clubes (id) WHERE deleted_at IS NULL;
+
+-- Tabela de Associação: Membros do Clube
+CREATE TABLE clube_membros (
+    clube_id INT NOT NULL,
+    usuario_id INT NOT NULL,
+    data_entrada TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    cargo_no_clube VARCHAR(50) DEFAULT 'membro' CHECK (cargo_no_clube IN ('admin', 'membro', 'banido')),
+    ativo BOOLEAN DEFAULT TRUE,
+    PRIMARY KEY (clube_id, usuario_id),
+    FOREIGN KEY (clube_id) REFERENCES clubes(id) ON DELETE CASCADE,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+);
+
+
+CREATE TABLE clube_solicitacoes_entrada (
+    id SERIAL PRIMARY KEY,
+    clube_id INT NOT NULL,
+    usuario_id INT NOT NULL,
+    status_solicitacao VARCHAR(20) NOT NULL DEFAULT 'pendente'
+                                                      CHECK (status_solicitacao IN ('pendente', 'aprovada', 'rejeitada', 'cancelada_pelo_usuario')),
+    data_solicitacao TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    data_decisao TIMESTAMP WITH TIME ZONE NULL,
+    decidido_por_admin_id INT NULL,
+    FOREIGN KEY (clube_id) REFERENCES clubes(id) ON DELETE CASCADE,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    FOREIGN KEY (decidido_por_admin_id) REFERENCES usuarios(id) ON DELETE SET NULL,
+    UNIQUE (clube_id, usuario_id, data_solicitacao)
+);
+
+-- Se quiser um índice para buscar pendentes rapidamente:
+CREATE INDEX idx_clube_solicitacoes_status ON clube_solicitacoes_entrada (clube_id, status_solicitacao);
+
+-- ADICIONAR ESTE ÍNDICE ÚNICO PARCIAL para garantir que só haja uma solicitação PENDENTE por usuário para um clube.
+CREATE UNIQUE INDEX unique_pending_request_for_club_user
+ON clube_solicitacoes_entrada (clube_id, usuario_id)
+WHERE status_solicitacao = 'pendente';
+
+
+
+-- ==========================================
+-- Arquivo: wallet_and_payments (AJUSTES MÍNIMOS)
+-- ==========================================
+
+-- Tabela de Carteiras: Armazena o saldo da carteira virtual de cada usuário.
+CREATE TABLE carteiras (
+    id SERIAL PRIMARY KEY,
+    usuario_id INT NOT NULL UNIQUE,
+    saldo NUMERIC(12, 2) NOT NULL DEFAULT 0.00,
+    moeda VARCHAR(3) NOT NULL DEFAULT 'BRL',
+    status VARCHAR(20) DEFAULT 'ativa' CHECK (status IN ('ativa', 'bloqueada_temporariamente', 'suspensa')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+);
+
+-- Tabela de services_types: Categoriza os tipos de serviços/operações que podem gerar "itens pagáveis" (na tabela 'services').
+-- PROPÓSITO: Agrupa 'services' de natureza similar. Essencial para dar contexto.
+CREATE TABLE services_types (
+    service_type_id SERIAL PRIMARY KEY,
+    service_type VARCHAR(50) NOT NULL UNIQUE, -- Nome original da sua coluna
+    service_name VARCHAR(100) NOT NULL,       -- Nome amigável do tipo
+    description TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO services_types (service_type, service_name, description)
+VALUES ('reserva', 'Reserva de Quadra', 'Item pagável referente a uma reserva de quadra.'),
+       ('carteira_deposito', 'Depósito em Carteira', 'Item representando um depósito na carteira.'),
+       ('carteira_saque', 'Saque da Carteira', 'Item representando um saque da carteira.');
+       -- Adicionar outros tipos como 'mensalidade_clube', 'inscricao_evento' conforme necessário.
+
+-- Tabela de services (AGORA REPRESENTA ITENS PAGÁVEIS ESPECÍFICOS):
+-- PROPÓSITO: Cada linha é uma instância única de algo que precisa ser pago ou que gerou uma movimentação.
+-- Ex: "Pagamento para Reserva #55", "Mensalidade Clube X - Jan/2024", "Depósito #123 na Carteira".
+CREATE TABLE services (
+    service_id SERIAL PRIMARY KEY,
+    service_type_id INTEGER NOT NULL,             -- FK para service_types, categoriza este "item pagável".
+    service_name VARCHAR(255) NOT NULL,         -- Descrição/Nome do item pagável (ex: "Reserva #55 - Quadra X 20h por João", "Depósito PIX #123").
+    description TEXT,                           -- Detalhes adicionais sobre este item pagável.
+    usuario_responsavel_id INTEGER NULL,    -- Usuário principal a quem este item se refere (devedor, beneficiário do depósito/saque).
+    amount_due NUMERIC(12, 2) NULL,   
+                                     -- Comentário: Representa o valor nominal ou custo total esperado do serviço.
+                                     -- Para service_type='reserva', este campo pode ser NULL, pois o valor
+                                     -- é derivado da soma dos pagamentos dos participantes.
+                                     -- Para outros tipos, como 'carteira_deposito', armazena o valor do depósito.
+    currency VARCHAR(3) NOT NULL DEFAULT 'BRL', -- Moeda do item.
+    status_item VARCHAR(50) NOT NULL DEFAULT 'pendente_pagamento' -- Status do item pagável em si (ex: 'pendente_pagamento', 'pago', 'cancelado').
+                   CHECK (status_item IN ('pendente_pagamento', 'pago_parcialmente', 'pago_totalmente', 'cancelado_item', 'processando_item')),
+    -- Para ligar este "item pagável" (service) à sua entidade original (ex: reserva),
+    -- a entidade original (ex: tabela 'reservas') deverá ter uma FK para 'services.service_id'.
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP, -- ADICIONADO: para rastrear mudanças no item pagável
+    FOREIGN KEY (service_type_id) REFERENCES services_types(service_type_id),
+    FOREIGN KEY (usuario_responsavel_id) REFERENCES usuarios(id)
+);
+
+-- Tabela de transactions: Registra todas as movimentações financeiras.
+CREATE TABLE transactions (
+    transaction_id SERIAL PRIMARY KEY,
+    service_id INTEGER NOT NULL, -- FK para 'services' (que agora são "itens pagáveis"). Indica O QUE está sendo pago/movimentado.
+    conta_id INTEGER NULL,       -- FK para 'contas'. Método de pagamento externo usado (se houver).
+    usuario_id INTEGER NOT NULL, -- Usuário cuja carteira é afetada OU que está realizando a transação (pode ser o mesmo que services.usuario_responsavel_id ou diferente, ex: um terceiro pagando por um service de outro).
+    amount NUMERIC(12, 2) NOT NULL, -- Valor da transação.
+    currency VARCHAR(3) NOT NULL DEFAULT 'BRL',
+    status VARCHAR(50) NOT NULL CHECK (status IN ('pendente', 'processando', 'rejeitado', 'concluida', 'cancelado', 'expirado', 'reembolsada', 'contestado')),
+    gateway_transaction_id VARCHAR(255) NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (service_id) REFERENCES services(service_id),
+    FOREIGN KEY (conta_id) REFERENCES contas(id),
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+);
+
+-- Tabela saldo_carteira_historico: Registra o saldo da carteira após cada transação que a afeta.
+CREATE TABLE saldo_carteira_historico (
+    id SERIAL PRIMARY KEY,
+    carteira_id INT NOT NULL,
+    transaction_id INT NOT NULL UNIQUE,
+    saldo_anterior NUMERIC(14, 2) NOT NULL,
+    valor_transacao_aplicado NUMERIC(14, 2) NOT NULL,
+    saldo_posterior NUMERIC(14, 2) NOT NULL,
+    registrado_em TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (carteira_id) REFERENCES carteiras(id) ON DELETE CASCADE,
+    FOREIGN KEY (transaction_id) REFERENCES transactions(transaction_id) ON DELETE CASCADE
+);
+CREATE INDEX idx_saldo_carteira_historico_carteira_ts ON saldo_carteira_historico (carteira_id, registrado_em DESC);
+CREATE INDEX idx_saldo_carteira_historico_transaction ON saldo_carteira_historico (transaction_id);
+
+
+-- NOTA: A tabela PayableItemTransactions foi omitida nesta versão simplificada, assumindo
+-- que um "service" (item pagável) é pago por uma única transação ou o status de pagamento
+-- é gerenciado diretamente em 'services.status_item'. Se pagamentos parciais
+-- para um mesmo "service" forem um requisito forte, PayableItemTransactions seria necessária.
+
+-- Tabela de transaction_status_history: Histórico de mudanças de status de uma transação.
+CREATE TABLE transaction_status_history (
+    history_id SERIAL PRIMARY KEY,
+    transaction_id INTEGER NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    reason TEXT NULL,
+    FOREIGN KEY (transaction_id) REFERENCES transactions(transaction_id) ON DELETE CASCADE
+);
+
+-- ============================================================================
+-- TABELAS DE DETALHES ESPECÍFICOS DE TRANSAÇÃO
+-- ============================================================================
+
+CREATE TABLE transaction_details_cartao (
+    transaction_id INT PRIMARY KEY,
+    status_cartao_gateway VARCHAR(50) NOT NULL
+        CHECK (status_cartao_gateway IN ('new', 'waiting', 'identified', 'approved', 'paid', 'unpaid', 'refunded', 'contested', 'canceled', 'settled', 'expired')),
+    nsu_gateway VARCHAR(100) NULL,
+    authorization_code VARCHAR(100) NULL,
+    installments INT NULL,
+    gateway_response_code VARCHAR(50) NULL,
+    gateway_response_message TEXT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (transaction_id) REFERENCES transactions(transaction_id) ON DELETE CASCADE
+);
+
+CREATE TABLE transaction_details_pix (
+    transaction_id INT PRIMARY KEY,
+    status_pix_gateway VARCHAR(50) NOT NULL
+        CHECK (status_pix_gateway IN ('acessado', 'pendente', 'rejeitado', 'aceito', 'cancelado', 'expirado')),
+    txid VARCHAR(255) NULL,
+    end_to_end_id VARCHAR(255) NULL UNIQUE,
+    pix_copy_paste TEXT NULL,
+    pix_qr_code_url TEXT NULL,
+    info_pagador_gateway TEXT NULL,
+    gateway_response_code VARCHAR(50) NULL,
+    gateway_response_message TEXT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (transaction_id) REFERENCES transactions(transaction_id) ON DELETE CASCADE
+);
+
+-- ==========================================
+-- Arquivo: rent (20250331203029) - AJUSTADO PARA A NOVA LÓGICA DE 'SERVICES'
+-- ==========================================
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Tabela reservas (ID agora é UUID, e public_id não é mais necessário)
+CREATE TABLE reservas (
+    id UUID PRIMARY KEY NOT NULL DEFAULT (uuid_generate_v4()), -- ALTERADO para UUID
+    usuario_id INT NULL,                  -- Organizador atual da lista/reserva. NULL se 'VAZIA'.
+    clube_id INT NULL,                        -- Clube associado à lista.
+    service_id INT NOT NULL UNIQUE,           -- FK para 'services.service_id'. ESTA É A LIGAÇÃO para o "item pagável" que representa esta reserva.
+    quadra_id INT NOT NULL,
+    inicio TIMESTAMP NOT NULL,
+    fim TIMESTAMP NOT NULL,
+    status_id VARCHAR(50) NOT NULL DEFAULT 'VAZIA' -- Default para novas listas criadas pela arena
+        CHECK (status_id IN (
+            'VAZIA',                -- Criada pela arena, aguardando organizador/clube/1º pagante
+            'ABERTA',               -- Tem organizador/clube/1º pagante, sem conflito direto
+            'EM DISPUTA',           -- Concorrendo com outras listas pelo horário
+            'ESPERANDO',            -- Ganhou prioridade (>24h para o jogo, mínimo pagantes OK)
+            'RESERVADO',            -- Confirmada (<24h para o jogo, mínimo pagantes OK)
+            'PERDIDO',              -- Perdeu a disputa para outra lista
+            'CANCELADA',            -- Descontinuada por várias razões (organizador desistiu, pagantes saíram)
+            'CANCELADA_PELA_ARENA', -- Cancelada pela arena (ex: problema na quadra)
+            'CONCLUIDO'             -- Horário da reserva já passou
+        )),
+    modalidade VARCHAR(20) NOT NULL CHECK (modalidade IN ('usuarios', 'times')),
+    min_pagantes INT DEFAULT 1 CHECK (min_pagantes >= 1),
+    motivo_cancelamento_arena TEXT NULL, -- Motivo se CANCELADA_PELA_ARENA
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE SET NULL,
+    FOREIGN KEY (clube_id) REFERENCES clubes(id) ON DELETE SET NULL,
+    FOREIGN KEY (service_id) REFERENCES services(service_id) ON DELETE CASCADE,
+    FOREIGN KEY (quadra_id) REFERENCES quadras(id) ON DELETE CASCADE
+);
+
+-- Tabela reserva_usuarios (reserva_id agora é UUID para corresponder a reservas.id)
+CREATE TABLE reserva_usuarios (
+    reserva_id UUID NOT NULL, -- ALTERADO para UUID
+    usuario_id INT NOT NULL,
+    role VARCHAR(20) NOT NULL DEFAULT 'jogador' CHECK (role IN ('organizador', 'jogador')), -- NOVO CAMPO: Indica o papel do usuário na reserva
+    is_first_payer BOOLEAN NOT NULL DEFAULT FALSE, -- Indica se este membro fez o ṕrimeiro pagamento antecipado da lista (desconto)
+    status VARCHAR(20) NOT NULL CHECK (status IN ('pago_presencial', 'pago_antecipado','pagar_presencialmente')), -- estados pode ser pago ou pagamento pendente ('pagar_presencialmente')
+    is_guest BOOLEAN DEFAULT FALSE,
+    price NUMERIC(10,2) DEFAULT 0.00,
+    transaction_id_pagamento INT NULL,
+    PRIMARY KEY (reserva_id, usuario_id),
+    FOREIGN KEY (reserva_id) REFERENCES reservas(id) ON DELETE CASCADE,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    FOREIGN KEY (transaction_id_pagamento) REFERENCES transactions(transaction_id) ON DELETE SET NULL
+);
+
+-- Adiciona uma restrição para garantir que só haja um 'organizador' por reserva na tabela reserva_usuarios.
+CREATE UNIQUE INDEX ux_reserva_usuarios_one_organizer_per_reserva
+ON reserva_usuarios (reserva_id) WHERE role = 'organizador';
+
+-- Adiciona uma restrição para garantir que só haja um 'is_first_payer' TRUE por reserva.
+CREATE UNIQUE INDEX ux_reserva_usuarios_one_first_payer_per_reserva
+ON reserva_usuarios (reserva_id) WHERE is_first_payer = TRUE;
+
+-- Observação para o backend/triggers:
+-- É crucial garantir que o 'usuario_id' do registro com 'role = 'organizador'' em 'reserva_usuarios'
+-- seja o mesmo que 'reservas.usuario_id'. Isso geralmente é feito através de um TRIGGER
+-- no banco de dados ou de validação na camada da aplicação, pois um CHECK CONSTRAINT
+-- padrão não pode referenciar diretamente dados de outra tabela para esta validação cruzada.
+
+-- DADOS INICIAIS PARA SERVICE TYPES (EXEMPLOS)
+-- INSERT INTO services_types (service_type, service_name, description) já está acima.
+
+-- EXEMPLO DE CRIAÇÃO DE UM "SERVICE" (ITEM PAGÁVEL) QUANDO UMA RESERVA É CRIADA:
+-- (Isso seria feito pela lógica da aplicação)
+--
+-- -- Suponha que uma reserva com id_reserva = 100 foi criada para o usuario_id = 5, no valor de R$50.00
+-- INSERT INTO services (service_type_id, service_name, description, usuario_responsavel_id, amount_due, currency, status_item)
+-- VALUES (
+--     (SELECT service_type_id FROM services_types WHERE service_type = 'reserva'),
+--     'Pagamento Reserva #100',
+--     'Referente à reserva da Quadra Y no dia Z às X horas.',
+--     5, -- usuario_responsavel_id
+--     50.00,
+--     'BRL',
+--     'pendente_pagamento'
+-- );
+-- -- O ID gerado para este novo 'service' (ex: service_id = 201) seria então atualizado em 'reservas.service_id' para a reserva #100.
+-- UPDATE reservas SET service_id = 201 WHERE id = 100;

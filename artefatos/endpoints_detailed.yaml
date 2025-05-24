@@ -1,0 +1,197 @@
+models:
+endpoints:
+  auth:
+    - path: /api/auth/login
+      method: POST
+      description: "Endpoint de login usando um metodo de credencial (No momento apenas Google OAuth) Deve verificar o id_token fornecido e retornar o user_id, token e user object, caso o usuário não exista no sistema, retorna 400 solicitando as informações necessárias para criar o  novo usuário."
+
+    - path: /api/auth/complete-registration
+      method: POST
+      description: "Completa o cadastro do usuário no caso de login com Google OAuth sem perfil cadastrado, informações como cpf, nome e esporte preferido são necessárias"
+
+  users:
+    - path: /api/users/me
+      method: GET
+      description: "Retorna o objeto Usuário do usuário logado, esse objeto contem os dados do usuario logado."
+
+    - path: /api/users/:userId
+      method: GET
+      description: "Retorna o objeto Usuário do usuário passado no parametro userId, esse objeto contem os dados do usuario passado no parametro userId."
+
+    - path: /api/users/me
+      method: PATCH
+      description: "Atualiza informações do usuário logado, deve ser passado o campo que deseja atualizar e o novo valor"
+
+    - path: /api/users/:userId/club-member?page={page}&limit={limit}
+      method: GET
+      description: "Verifica/lista clubes que o usuário passado no parametro userId é membro"
+
+    - path: /api/users/:userId/club-admin?page={page}&limit={limit}
+      method: GET
+      description: "Verifica/lista clubes que o usuário passado no parametro userId é admin"
+
+  wallet:
+    - path: /api/users/me/wallet
+      method: GET
+      description: "Retorna dados como saldo, lista de transações (limit de 10) e lista de formas de pagamento cadastradas do usuário"
+
+    - path: /api/users/me/wallet/deposits
+      method: POST
+      description: "Cria uma cobrança de depósito, deve ser passado o valor e o método de pagamento"
+
+    - path: /api/users/me/wallet/withdrawals
+      method: POST
+      description: "Cria uma cobrança de saque, deve ser passado o valor e o método de pagamento, se o usuário estiver logado em conta pix ele só pode fazer reembolso na conta que depositou o dinheiro"
+
+    - path: /api/users/me/wallet/transactions?page={page}&limit={limit}
+      method: GET
+      description: "lista todas as transações do usuário"
+
+  clubs:
+    - path: /api/clubs
+      method: POST
+      description: "Cria um novo clube precisa passar o nome do clube e a photo_url"
+
+    - path: /api/clubs/:clubId
+      method: GET
+      description: "Retorna o objeto clube"
+
+    - path: /api/clubs/:clubId
+      method: PATCH
+      description: "Atualiza o objeto clube"
+
+    - path: /api/clubs/:clubId
+      method: DELETE
+      description: "Remove o clube"
+
+    - path: /api/clubs/:clubId/members?page={page}&limit={limit}
+      method: GET
+      description: "Retorna a lista de membros do clube"
+
+    - path: /api/clubs/:clubId/members/:userId/status
+      method: PATCH
+      description: "Altera o status de um membro do clube, usado principalmente para banir um membro, remove-lo ou dar permissão de administrador"
+
+    - path: /api/clubs/:clubId/join
+      method: POST
+      description: "Solicita entrada em um clube para análise do admin."
+
+    - path: /api/clubs/:clubId/members
+      method: POST
+      description: "Adiciona um novo membro a um clube (admin)."
+
+    - path: /api/clubs/:clubId/leave
+      method: POST
+      description: "Permite um membro sair de um clube."
+
+    - path: /api/clubs/:clubId/join-requests
+      method: GET
+      description: "Lista solicitações pendentes de entrada em um clube."
+
+    - path: /api/clubs/:clubId/join-requests/:requestId/approve
+      method: POST
+      description: "Aprova uma solicitação de entrada em um clube."
+
+    - path: /api/clubs/:clubId/join-requests/:requestId/reject
+      method: POST
+      description: "Rejeita uma solicitação de entrada em um clube."
+
+  arenas:
+    - path: /api/arenas/:arenaId
+      method: GET
+      description: "Retorna o objeto arena"
+
+    - path: /api/arenas/local/default
+      method: POST
+      description: "Define o local que sera exibido no app de gestão como padrão"
+
+    - path: /api/arenas/:localId/available-hours?date={date}&interval={interval}
+      method: GET
+      description: "Retorna a disponibilidade de todas as quadras de um local em um determinado dia"
+
+  search:
+    - path: /api/search/available-courts?date={YYYY-MM-DD}&time={HH:MM}&duration={minutes}&city={cityName}&modality_id={modalityId}&page={pageNumber}&limit={itemsPerPage}
+      method: GET
+      description: "Pesquisa quadras disponíveis com base nos filtros fornecidos."
+
+  rents:
+    - path: /api/rents?page={page}&limit={limit}
+      method: GET
+      description: "Retorna todas as listas de reservas do usuário logado, uma lista de reserva é uma tentativa de aluguel, que só é confirmado após o pagamento da quantidade mínima de pessoas"
+
+    - path: /api/rents/:listId
+      method: GET
+      description: "Retorna o objeto lista de reserva com id listId"
+
+    - path: /api/rents/:listId/refund
+      method: POST
+      description: "Reembolsa um aluguel, o usuário deve ser removido da lista de reservas e o dinheiro deve ser devolvido para a carteira do usuário"
+
+    - path: /api/rents/:listId/qr-code
+      method: GET
+      description: "Retorna o qr-code para check-in"
+
+    - path: /api/rents/:listId/payers?page={page}&limit={limit}
+      method: GET
+      description: "Lista de pagantes do aluguel"
+
+    - path: /api/rents/:listId/enter-guest
+      method: POST
+      description: "Adiciona convidado"
+
+    - path: /api/rents/:listId/guests?page={page}&limit={limit}
+      method: GET
+      description: "Lista de convidados do aluguel"
+
+    - path: /api/rents/:listId/pay-guest
+      method: POST
+      description: "Pagar para um convidado, o usuário faz o pagamento e o convidado é adicionado a lista de reservas"
+
+    - path: /api/rents/lists
+      method: POST
+      description: "Cria uma nova lista de aluguel (para o aplicativo de gestão), deve receber um local, duração, e tamanho da lista"
+
+  payments:
+    - path: /api/payments/orders
+      method: POST
+      description: "Gera um novo pedido de pagamento, deve ser passado o valor e o método de pagamento e o link de pagamento é retornado"
+
+    - path: /api/payments/methods?page={page}&limit={limit}
+      method: GET
+      description: "Lista de métodos de pagamento"
+
+    - path: /api/payments/methods/default
+      method: PATCH
+      description: "Define método padrão do usuário logado"
+
+    - path: /api/payments/methods
+      method: POST
+      description: "Adiciona novo método de pagamento para o usuário logado"
+
+  price:
+    - path: /api/price?userId={userId}&serviceId={serviceId}
+      method: GET
+      description: "Retorna o preço de um serviço, o preço expira em 1 minuto"
+
+  check_in:
+    - path: /api/check-in/verify-qr
+      method: POST
+      description: "Verifica o qr-code e retorna os dados de confirmação"
+
+    - path: /api/check-in/confirm
+      method: POST
+      description: "Confirma o check-in, deve ser passado o id do check-in e o id do usuário"
+
+  notifications:
+    - path: /api/notifications?page={page}&limit={limit}
+      method: GET
+      description: "Lista de todas as notificações do usuário"
+
+  reports:
+    - path: /api/reports?localId={localId}&page={page}&limit={limit}
+      method: GET
+      description: "Lista de todos os relatórios de um local, um relatório é uma lista de objetos com metricas de um local, como quantidade de reservas, quantidade de convidados, quantidade de pagantes, etc.,se o parametro localId não for passado, será retornado todos os relatórios para o estabelecimento do usuário logado"
+
+    - path: /api/reports/milestones
+      method: POST
+      description: "Define as metas atuais de um local, cada metrica pode ter uma meta, ela é exibida no relatório e pode ser usada para gerar notificações" 

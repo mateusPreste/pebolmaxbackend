@@ -1,0 +1,34 @@
+Telas:
+  Reservas:
+    Rotas:
+      - /reservas
+    Api:
+      - url: /api/rent/{listId}
+        descricao: Api que retorna todas as informações de uma lista, usado para renderizar a tela de reservas
+    Estados:
+      - nome: ContentState
+        descricao: Estado de uma lista
+        valores:
+          - notPaid # entre na lista
+          - paid # está na lista, mas a lista não está completa
+          - waiting # está na lista, e a lista está completa
+          - lost # lista sem horário
+          - challenge # em disputa - add challenge state
+          - booked # lista com horário
+      - nome: TicketUserVariant
+        valores:
+          - organizer # organizador
+          - player # jogador
+    Componentes:
+      - nome: TicketHeader
+        descricao: Componente que exibe o cabeçalho do ticket, usado apenas nos ContentState paid e lost
+      - nome: MatchDetailsCard
+        descricao: Componente que exibe os detalhes da partida, visivel em todos os ContentState exceto lost, em booked ele possui um botão de chamar motorista
+      - nome: ListStatusCard
+        descricao: Componente que exibe o status da lista, ele mostra a etapa atual da lista explicando do que se trata esse estado, e possui uma barra de progresso (exceto em disputa), em disputa ele mostra o time concorrente e a porcentagem da lista que cada time completou, visivel em todos os ContentState exceto lost
+      - nome: OrganizerCard
+        descricao: Componente que exibe as informações do organizador, time e modalidade do jogo disputado, visivel em todos os ContentState
+      - nome: NewHourCard
+        descricao: Componente Shelf que exibe horários disponíveis para a lista sem horarios, acontece quando a lista perdeu a disputa para outro time, visivel apenas para o ContentState lost.
+      - nome: PlayersListCard
+        descricao: Componente que exibe a lista de jogadores, visivel em todos os ContentState
