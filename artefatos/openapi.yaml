@@ -137,9 +137,8 @@ components:
         - sport_id
         - name
 
-    User:
+    UserBase:
       type: object
-      description: Representa um usuário no sistema.
       properties:
         id:
           type: integer
@@ -151,21 +150,11 @@ components:
           type: string
           description: Nome completo do usuário.
           example: "João da Silva"
-        cpf: # Da tabela 'usuarios.cpf'
-          type: string
-          nullable: true
-          description: CPF do usuário.
-          example: "123.456.789-00"
         nickname: # Da tabela 'usuarios.apelido'
           type: string
           nullable: true
           description: Apelido do usuário.
           example: "Jão"
-        is_guest: # Da tabela 'usuarios.is_guest'
-          type: boolean
-          description: Indica se o usuário é um convidado.
-          default: false
-          readOnly: true
         photo_url: # Da tabela 'usuarios.foto'
           type: string
           format: url
@@ -178,36 +167,6 @@ components:
           minimum: 0
           maximum: 100
           default: 100
-          readOnly: true
-        email: # Da tabela 'credenciais.email'
-          type: string
-          format: email
-          description: Endereço de e-mail do usuário.
-          example: "joao.silva@example.com"
-        email_verified: # Da tabela 'credenciais.email_verified'
-          type: boolean
-          description: Indica se o e-mail do usuário foi verificado.
-          readOnly: true
-        phone_number: # Da tabela 'credenciais.phone_number'
-          type: string
-          nullable: true
-          description: Número de telefone do usuário.
-          example: "+5511999998888"
-        phone_verified: # Da tabela 'credenciais.phone_verified'
-          type: boolean
-          description: Indica se o telefone do usuário foi verificado.
-          readOnly: true
-        oauth_provider: # Da tabela 'credenciais.oauth_provider'
-          type: string
-          nullable: true
-          description: Provedor OAuth usado para login ex:'google'.
-          readOnly: true
-        roles: # Inferido de 'usuario_niveis' e 'niveis'
-          type: array
-          items:
-            type: string # Nome do nível, ex: "full", "conta pix"
-          description: Papéis/níveis do usuário no sistema.
-          example: ["full", "conta pix"]
           readOnly: true
         preferred_modality:
           $ref: '#/components/schemas/Modality'
@@ -226,62 +185,66 @@ components:
       required:
         - id
         - name
-        - email
+        - preferred_modality
     
-    PublicUser:
-      type: object
-      description: Representa as informações públicas de um usuário.
-      properties:
-        id:
-          type: integer
-          format: int64
-          description: ID único do usuário.
-          example: 1
-          readOnly: true
-        name:
-          type: string
-          description: Nome completo do usuário.
-          example: "João da Silva"
-        nickname:
-          type: string
-          nullable: true
-          description: Apelido do usuário.
-          example: "Jão"
-        photo_url:
-          type: string
-          format: url
-          nullable: true
-          description: URL da foto de perfil do usuário.
-          example: "https://example.com/path/to/photo.jpg"
-        reputation:
-          type: integer
-          description: Reputação do usuário (0-100).
-          minimum: 0
-          maximum: 100
-          default: 100
-          readOnly: true
-        # preferred_modality pode ser incluído se não for considerado sensível
-        preferred_modality:
-          $ref: '#/components/schemas/Modality' # Ou apenas o nome/ID da modalidade
-          nullable: true
-          description: Modalidade preferida do usuário (se público).
-        # Outros campos públicos que você possa querer adicionar (ex: data de entrada no sistema de forma genérica)
-      required:
-        - id
-        - name # O nome geralmente é público
+    User:
+      allOf:
+        - $ref: '#/components/schemas/UserBase'
+        - type: object
+          properties:
+            cpf: # Da tabela 'usuarios.cpf'
+              type: string
+              nullable: true
+              description: CPF do usuário.
+              example: "123.456.789-00"
+            email: # Da tabela 'credenciais.email'
+              type: string
+              format: email
+              description: Endereço de e-mail do usuário.
+              example: "joao.silva@example.com"
+            email_verified: # Da tabela 'credenciais.email_verified'
+              type: boolean
+              description: Indica se o e-mail do usuário foi verificado.
+              readOnly: true
+            phone_number: # Da tabela 'credenciais.phone_number'
+              type: string
+              nullable: true
+              description: Número de telefone do usuário.
+              example: "+5511999998888"
+            phone_verified: # Da tabela 'credenciais.phone_verified'
+              type: boolean
+              description: Indica se o telefone do usuário foi verificado.
+              readOnly: true
+            oauth_provider: # Da tabela 'credenciais.oauth_provider'
+              type: string
+              nullable: true
+              description: Provedor OAuth usado para login ex:'google'.
+              readOnly: true
+            roles: # Inferido de 'usuario_niveis' e 'niveis'
+              type: array
+              items:
+                type: string # Nome do nível, ex: "full", "conta pix"
+              description: Papéis/níveis do usuário no sistema.
+              example: ["full", "conta pix"]
+              readOnly: true
+            is_guest: # Da tabela 'usuarios.is_guest'
+              type: boolean
+              description: Indica se o usuário é um convidado.
+              default: false
+              readOnly: true
 
-    UserUpdatePayload: # Schema para o corpo da requisição de atualização do usuário
+    PublicUser:
+      allOf:
+        - $ref: '#/components/schemas/UserBase'
+        # ... pode adicionar/remover campos públicos
+
+    UserUpdatePayload:
       type: object
-      description: Campos atualizáveis para o perfil do usuário. Envie apenas os campos que deseja alterar.
       properties:
         name:
           type: string
           description: Novo nome completo do usuário.
           example: "João Silva Santos"
-        #cpf: # Se for permitido alterar o CPF após o registro inicial
-        #  type: string
-        #  description: Novo CPF do usuário (requer validação cuidadosa e pode ter implicações).
-        #  example: "111.222.333-44"
         nickname:
           type: string
           nullable: true # Usuário pode querer remover o apelido
@@ -304,9 +267,6 @@ components:
           nullable: true # Usuário pode querer remover a preferência
           description: ID da nova modalidade preferida.
           example: 3
-        # NÃO inclua campos como: id, email (a menos que tenha um fluxo de verificação),
-        # is_guest, reputation, roles, oauth_provider, email_verified, phone_verified,
-        # createdAt, updatedAt. Estes são geralmente gerenciados pelo sistema ou por fluxos específicos.
       minProperties: 1 # Pelo menos uma propriedade deve ser enviada para um PATCH
 
     
@@ -1173,8 +1133,8 @@ components:
       description: Detalhes de uma lista/reserva que está competindo por ou ocupando um horário.
       properties:
         reservation_id:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
           description: ID da reserva/lista.
         list_status:
           type: string
@@ -1391,8 +1351,8 @@ components:
       description: Resumo de uma lista que está competindo pelo horário solicitado.
       properties:
         reservation_id:
-          type: integer
-          format: int64
+          type: string
+          format: uuid
         list_status_in_db: # O status real da reserva no BD
           type: string
           enum: [VAZIA, ABERTA, EM DISPUTA] # Apenas estes são "competidores" para um novo entrante
@@ -1655,6 +1615,312 @@ components:
       required:
         - pagination
         - user_rents
+
+    ReservationCompetingListSummary:
+      type: object
+      description: Resumo de uma lista concorrente à reserva detalhada.
+      properties:
+        competitor_reservation_id:
+          type: string
+          format: uuid
+          description: ID da reserva concorrente.
+        competitor_club_name:
+          type: string
+          nullable: true
+          description: Nome do clube associado à lista concorrente.
+        competitor_occupation_percentage:
+          type: number
+          format: double
+          description: Porcentagem de ocupação da lista concorrente (pagantes confirmados / mínimo necessário para ela).
+      required:
+        - competitor_reservation_id
+        - competitor_occupation_percentage
+
+    ReservationParticipantDetail:
+      type: object
+      description: Detalhes de um participante (pago ou com pagamento pendente) na reserva.
+      properties:
+        user_id:
+          type: integer
+          format: int64
+        nickname:
+          type: string
+          nullable: true
+        photo_url:
+          type: string
+          format: url
+          nullable: true
+        role_in_reservation:
+          type: string
+          enum: [organizer, jogador] # de reserva_usuarios.role
+          description: Papel do usuário nesta reserva.
+        payment_status_detail: # Usado para paid_participants
+          type: string
+          nullable: true # Será nulo se este schema for usado para pending_payment_participants
+          enum: [pago_presencial, pago_antecipado] # de reserva_usuarios.status
+          description: Detalhe do status de pagamento se já pago.
+        status_in_list_detail: # Usado para pending_payment_participants
+          type: string
+          nullable: true # Será nulo se este schema for usado para paid_participants
+          enum: [pagar_presencialmente] # de reserva_usuarios.status
+          description: Detalhe do status na lista se pagamento estiver pendente.
+        is_first_payer:
+          type: boolean
+          description: Indica se este usuário foi o primeiro a pagar (relevante para desconto).
+      required:
+        - user_id
+        - role_in_reservation
+        - is_first_payer # Mesmo que false
+
+    AuthenticatedUserReservationStatus:
+      type: object
+      description: Status e informações do usuário autenticado em relação a esta reserva.
+      properties:
+        is_involved:
+          type: boolean
+          description: Indica se o usuário autenticado está envolvido com esta lista (organizador ou participante).
+        role: # Papel do usuário autenticado + status de pagamento agregado
+          type: string
+          enum: [organizer, participant_paid, participant_pending_payment, not_involved]
+          description: Papel e status de pagamento do usuário autenticado nesta lista.
+        is_first_payer_for_this_list:
+          type: boolean
+          nullable: true # Nulo se não envolvido ou não pagante ainda
+          description: Indica se o usuário autenticado foi o primeiro pagante desta lista.
+        payment_status_for_this_list: # Status de pagamento específico do usuário autenticado
+          type: string
+          enum: [pago_antecipado, pago_presencial, pagar_presencialmente, not_applicable]
+          description: Status de pagamento específico do usuário autenticado para esta lista.
+        price_for_auth_user:
+          type: string # String para valor monetário
+          nullable: true
+          description: O preço que o usuário autenticado pagou ou deve pagar por esta lista.
+          example: "15.00"
+      required:
+        - is_involved
+        - role
+        - payment_status_for_this_list
+
+    ReservationLocationInfo:
+      type: object
+      description: Informações detalhadas do local da reserva.
+      properties:
+        local_id:
+          type: integer
+          format: int64
+        local_name:
+          type: string
+        local_logo_url: # Usando logo_url de locais ou estabelecimentos
+          type: string
+          format: url
+          nullable: true
+          description: URL do logo do local (ou do estabelecimento, se o local não tiver um).
+        address:
+          type: object
+          properties:
+            street: { type: string }
+            number: { type: string }
+            complement: { type: string, nullable: true }
+            neighborhood: { type: string }
+            city: { type: string }
+            state: { type: string }
+            postal_code: { type: string }
+            country: { type: string }
+          required: [street, number, neighborhood, city, state, postal_code, country]
+        coordinates:
+          type: object
+          properties:
+            latitude: { type: number, format: double }
+            longitude: { type: number, format: double }
+          required: [latitude, longitude]
+      required: [local_id, local_name, address, coordinates]
+
+    ReservationCourtInfo:
+      type: object
+      description: Informações detalhadas da quadra da reserva.
+      properties:
+        court_id:
+          type: integer
+          format: int64
+        court_name:
+          type: string
+        court_photo_url:
+          type: string
+          format: url
+          nullable: true
+        supported_modalities:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModalityWithSportSummary' # Definido em discussões anteriores
+      required: [court_id, court_name, supported_modalities]
+
+    ReservationDetailResponse: # Schema principal da resposta
+      type: object
+      description: Detalhes completos de uma reserva específica.
+      properties:
+        reservation_id:
+          type: string
+          format: uuid
+          description: ID (UUID) da reserva.
+        status:
+          type: string
+          enum: [VAZIA, ABERTA, EM DISPUTA, ESPERANDO, RESERVADO, PERDIDO, CANCELADA, CANCELADA_PELA_ARENA, CONCLUIDO]
+          description: Status atual da reserva.
+        modality:
+          type: string
+          enum: [usuarios, times]
+          description: Modalidade da reserva.
+        start_time_utc:
+          type: string
+          format: date-time
+          description: Data e hora de início da reserva (UTC).
+        end_time_utc:
+          type: string
+          format: date-time
+          description: Data e hora de término da reserva (UTC).
+        min_payers_required:
+          type: integer
+          description: Número mínimo de pagantes necessário para a reserva.
+        vacancies_remaining:
+          type: integer
+          description: Número de vagas restantes para atingir o mínimo de pagantes confirmados.
+        is_in_dispute_status:
+          type: boolean
+          description: True se o status atual da reserva for 'EM DISPUTA'.
+        competing_lists_info:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReservationCompetingListSummary'
+          description: |
+            Detalhes resumidos de outras listas/reservas que competem pelo mesmo horário/quadra.
+            Preenchido se esta reserva estiver em 'EM DISPUTA', ou 'ABERTA' e houver conflito.
+        organizer_info:
+          $ref: '#/components/schemas/UserRentOrganizerDetails' # Schema para {user_id, nickname, photo_url}
+          nullable: true
+          description: Informações do organizador da reserva (nulo se a lista for 'VAZIA').
+        club_info:
+          $ref: '#/components/schemas/UserRentClubDetails' # Schema para {club_id, name, photo_url}
+          nullable: true
+          description: Informações do clube associado (nulo se não houver).
+        location_info:
+          $ref: '#/components/schemas/ReservationLocationInfo'
+        court_info:
+          $ref: '#/components/schemas/ReservationCourtInfo'
+        participants_summary:
+          $ref: '#/components/schemas/UserRentParticipantsInfo' # Schema para {min_payers_required, current_paid_payers, pending_payment_payers, total_value_collected_so_far}
+        paid_participants:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReservationParticipantDetail'
+          description: Lista de participantes que já efetuaram o pagamento.
+        pending_payment_participants:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReservationParticipantDetail'
+          description: Lista de participantes com pagamento pendente ('pagar_presencialmente').
+        authenticated_user_status:
+          $ref: '#/components/schemas/AuthenticatedUserReservationStatus'
+      required:
+        - reservation_id
+        - status
+        - modality
+        - start_time_utc
+        - end_time_utc
+        - min_payers_required
+        - vacancies_remaining
+        - is_in_dispute_status
+        - competing_lists_info
+        - location_info
+        - court_info
+        - participants_summary
+        - paid_participants
+        - pending_payment_participants
+        - authenticated_user_status
+
+    RefundProcessedResponse:
+      type: object
+      description: Resposta após o processamento bem-sucedido de um reembolso.
+      properties:
+        message:
+          type: string
+          description: Mensagem confirmando o processamento do reembolso.
+          example: "Reembolso processado com sucesso."
+        refunded_amount:
+          type: string # Usar string para precisão monetária
+          description: O valor que foi creditado na carteira do usuário.
+          example: "15.00"
+        currency:
+          type: string
+          description: Moeda do valor reembolsado.
+          example: "BRL"
+        new_wallet_balance:
+          type: string # Usar string para precisão monetária
+          description: O novo saldo da carteira do usuário após o reembolso.
+          example: "165.75"
+        refund_transaction_id:
+          type: integer
+          format: int64
+          description: ID da transação de reembolso criada na plataforma.
+          example: 901
+        reservation_new_status:
+          type: string
+          nullable: true # Pode ser nulo se o status da reserva não mudar
+          description: O novo status da reserva após a reavaliação (se houver mudança).
+          enum: [VAZIA, ABERTA, EM DISPUTA, ESPERANDO, RESERVADO, PERDIDO, CANCELADA, CANCELADA_PELA_ARENA, CONCLUIDO, null]
+          example: "ABERTA"
+      required:
+        - message
+        - refunded_amount
+        - currency
+        - new_wallet_balance
+        - refund_transaction_id
+        # reservation_new_status é opcional
+
+    CheckInTokenResponse:
+      type: object
+      description: Contém o token de check-in e dados contextuais da reserva para geração do QR Code no cliente.
+      properties:
+        check_in_token:
+          type: string
+          format: uuid
+          description: O token único (UUID) a ser embutido no QR Code pelo cliente.
+          example: "a1e8f5b2-9c4d-4f6a-8e3b-0d1c7a9b3e2f"
+        reservation_id:
+          type: string
+          format: uuid
+          description: ID da reserva associada.
+          example: "c7a8b9d0-e1f2-3456-7890-abcdef123456"
+        user_id:
+          type: integer
+          format: int64
+          description: ID do usuário para o qual este token de check-in é válido.
+          example: 101
+        reservation_start_time_utc:
+          type: string
+          format: date-time
+          description: Data e hora de início da reserva (UTC).
+          example: "2024-09-10T19:00:00Z"
+        reservation_end_time_utc:
+          type: string
+          format: date-time
+          description: Data e hora de término da reserva (UTC), que também é o momento de expiração do token para check-in.
+          example: "2024-09-10T20:00:00Z"
+        court_name:
+          type: string
+          description: Nome da quadra reservada.
+          example: "Quadra Futsal Principal"
+        local_name:
+          type: string
+          description: Nome do local da reserva.
+          example: "Arena Master Sports"
+      required:
+        - check_in_token
+        - reservation_id
+        - user_id
+        - reservation_start_time_utc
+        - reservation_end_time_utc
+        - court_name
+        - local_name
 
   securitySchemes:
     bearerAuth:
@@ -2225,9 +2491,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-              example:
-                message: "Token de autenticação ausente ou inválido."
-                code: "UNAUTHENTICATED"
         '404':
           description: Usuário com o `userId` especificado não encontrado.
           content:
@@ -2523,9 +2786,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-              example:
-                message: "Usuários com seu nível de conta não têm permissão para realizar saques."
-                code: "WITHDRAWAL_NOT_ALLOWED_FOR_ACCOUNT_LEVEL"
         '422': # Unprocessable Entity
           description: Não foi possível processar a solicitação de saque no momento (ex falha na comunicação com o sistema de pagamentos externo).
           content:
@@ -4112,6 +4372,346 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Erro interno do servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/rents/{reservationId}:
+    get:
+      tags:
+        - Rents
+      summary: Obtém detalhes de uma lista de aluguel (reserva) específica
+      description: |
+        Retorna informações detalhadas sobre uma "lista de aluguel" (reserva) específica,
+        identificada pelo seu ID (`reservationId` UUID).
+        Qualquer usuário autenticado pode visualizar estes detalhes.
+
+        Se a lista estiver `EM DISPUTA` (ou `ABERTA` mas com conflito de horário detectado),
+        a resposta incluirá um resumo das outras listas que competem pelo mesmo horário/quadra,
+        mostrando o nome do clube concorrente e sua porcentagem de ocupação.
+
+        O detalhamento de valores pagos por outros participantes não é exposto; apenas o valor
+        relevante para o usuário autenticado é mostrado em `authenticated_user_status.price_for_auth_user`.
+        O `participants_summary.total_value_collected_so_far` mostra o total arrecadado pela lista.
+
+        **Interações no Banco de Dados e Fluxo de Dados/Ações:**
+        1.  Busca a `reservas` pelo `id = {reservationId}` (que é UUID).
+        2.  Coleta dados da reserva principal: `status_id`, `modalidade`, `inicio`, `fim`, `min_pagantes`, `usuario_id` (organizador), `clube_id`.
+        3.  Coleta dados do local (`locais` - nome, `logo_url`, endereço completo, coordenadas) e da quadra (`quadras` - nome, `photo_url`; `quadra_possui_modalidades` e `modalidades`/`esportes` para `supported_modalities`).
+        4.  Calcula `vacancies_remaining` (baseado em `min_pagantes` e `current_paid_payers`).
+        5.  Determina `is_in_dispute_status` (se `reservas.status_id = 'EM DISPUTA'`).
+        6.  **Se `is_in_dispute_status` for true (ou se `reservas.status_id = 'ABERTA'` e for detectado um conflito real de horário com outra lista `ABERTA` ou `EM DISPUTA`):**
+            a.  Busca outras `reservas` (`r2`) que conflitam com `r.quadra_id` e o intervalo `(r.inicio, r.fim)` da reserva principal e que estejam em status `VAZIA`, `ABERTA` ou `EM DISPUTA`.
+            b.  Para cada `r2` concorrente:
+                i.  Obtém `r2.id` (UUID), `r2.clube_id` (para buscar `clubes.nome`).
+                ii. Calcula a porcentagem de ocupação de `r2` (`current_paid_payers` de `r2` / `min_pagantes` de `r2`).
+                iii.Popula `competing_lists_info`.
+        7.  Coleta todos os `reserva_usuarios` da reserva principal:
+            a.  Separa em `paid_participants` (status `pago_antecipado`, `pago_presencial`) e `pending_payment_participants` (status `pagar_presencialmente`).
+            b.  Para cada participante, obtém `user_id`, `nickname` (de `usuarios`), `photo_url` (de `usuarios`), `role`, `is_first_payer`, e o status de pagamento específico (`reserva_usuarios.status`).
+        8.  Calcula `participants_summary`:
+            a.  `current_paid_payers` (COUNT de `reserva_usuarios` com status `pago_antecipado` ou `pago_presencial`).
+            b.  `pending_payment_payers` (COUNT de `reserva_usuarios` com status `pagar_presencialmente`).
+            c.  `total_value_collected_so_far` (SUM de `reserva_usuarios.price` para os `paid_payers`).
+        9.  Determina o `authenticated_user_status`:
+            a.  Verifica se o `auth_user_id` é o `reservas.usuario_id` (organizador) ou se está em `reserva_usuarios`.
+            b.  Define `role`, `is_first_payer_for_this_list`, `payment_status_for_this_list`.
+            c.  Obtém `price_for_auth_user` de `reserva_usuarios.price` se o usuário estiver na lista.
+        10. Formata a resposta.
+
+        **Lógica de Implementação e Regras de Negócio:**
+        - Requer autenticação de usuário.
+        - `reservationId` deve ser um UUID válido.
+        - Se a reserva não for encontrada, retorna 404.
+        - A visibilidade dos detalhes é pública para usuários autenticados.
+        - O preço pago por outros participantes não é exposto individualmente na lista de participantes.
+      operationId: getReservationDetailsById
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: reservationId
+          in: path
+          required: true
+          description: ID (UUID) da lista de aluguel/reserva.
+          schema:
+            type: string
+            format: uuid
+            example: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+      responses:
+        '200':
+          description: Detalhes da lista de aluguel/reserva retornados com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationDetailResponse'
+        '401':
+          description: Não autenticado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Lista de aluguel/reserva não encontrada com o ID fornecido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Erro interno do servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/rents/{reservationId}/refund:
+    post:
+      tags:
+        - Rents
+        - Payments
+      summary: Solicita reembolso de um pagamento para uma reserva
+      description: |
+        Permite que um usuário autenticado, que tenha efetuado um pagamento (`pago_antecipado` ou `pago_presencial`)
+        para uma reserva específica (`reservationId`), solicite o reembolso do valor.
+        O valor é creditado de volta na carteira virtual do usuário.
+        Após o reembolso, o status do usuário na lista de participantes da reserva é atualizado para 'saiu_da_lista'.
+        O status geral da reserva é reavaliado.
+
+        **Condições para Reembolso:**
+        - O usuário autenticado deve ser o pagador e estar na lista da reserva.
+        - O status de pagamento do usuário na reserva deve ser `pago_antecipado` ou `pago_presencial`.
+        - O status da reserva (`reservas.status_id`) NÃO PODE ser `RESERVADO`, `CONCLUIDO`, `CANCELADA_PELA_ARENA`, ou `PERDIDO`.
+
+        **Reembolso do Organizador:**
+        - Se o solicitante for o organizador (`role = 'organizador'`):
+          - Ele só pode ser reembolsado se for o ÚNICO participante na lista (`reserva_usuarios`) E tiver um status de pagamento elegível.
+          - Neste caso, a reserva é efetivamente cancelada: seu status muda para `CANCELADA`, e `reservas.usuario_id` (organizador da reserva) e `reservas.clube_id` (se houver) são definidos como `NULL`.
+
+        **Interações no Banco de Dados e Fluxo de Dados/Ações:**
+        1.  Validar `reservationId` (UUID).
+        2.  Identificar o usuário autenticado (`auth_user_id`).
+        3.  Verificar se `auth_user_id` está em `reserva_usuarios` para a `reservationId` com `status` 'pago_antecipado' ou 'pago_presencial'. Se não, 403 ou 404.
+        4.  Verificar o `status_id` da `reservas`. Se for `RESERVADO`, `CONCLUIDO`, `CANCELADA_PELA_ARENA`, ou `PERDIDO`, retornar 403 (Reembolso não permitido).
+        5.  **Se o solicitante for o organizador:**
+            a.  Contar o número total de participantes em `reserva_usuarios` para esta `reservationId`.
+            b.  Se > 1, retornar 403 (Organizador com outros participantes não pode usar este endpoint para reembolso simples).
+            c.  Se = 1 (apenas ele mesmo) e ele pagou:
+                i.  Iniciar transação de BD.
+                ii. Atualizar `reserva_usuarios.status` para 'saiu_da_lista'.
+                iii.Criar `service` tipo 'reembolso_reserva_participante' com `service_name = "Reembolso Participação Reserva #{ID_RESERVA_UUID_CURTO} - Usuário {APELIDO_USUARIO}"`.
+                iv. Criar `transaction` de reembolso (crédito na carteira), vinculada ao novo `service_id`. `conta_id` é NULL.
+                v.  Atualizar `carteiras.saldo`.
+                vi. Criar `saldo_carteira_historico`.
+                vii.Atualizar `reservas`: `status_id = 'CANCELADA'`, `usuario_id = NULL`, `clube_id = NULL` (se aplicável).
+                viii.Commit da transação.
+                ix. Retornar 200 com `RefundProcessedResponse`, incluindo `reservation_new_status = 'CANCELADA'`.
+        6.  **Se o solicitante for um jogador (ou organizador que não é o único):**
+            a.  Iniciar transação de BD.
+            b.  Atualizar `reserva_usuarios.status` para 'saiu_da_lista'. Se ele era `is_first_payer = TRUE`, setar para `FALSE`.
+            c.  Criar `service` tipo 'reembolso_reserva_participante'.
+            d.  Criar `transaction` de reembolso (crédito na carteira).
+            e.  Atualizar `carteiras.saldo`.
+            f.  Criar `saldo_carteira_historico`.
+            g.  **Reavaliar status da reserva (`reservas`):**
+                - Contar pagantes ativos restantes.
+                - Aplicar lógica de transição de status (ex: de `ESPERANDO` para `ABERTA` se `min_pagantes` não for mais atendido). Atualizar `reservas.status_id` e `reservas.updated_at`.
+            h.  Commit da transação.
+            i.  Retornar 200 com `RefundProcessedResponse`, incluindo o `reservation_new_status` atualizado.
+
+        **Lógica de Implementação e Regras de Negócio:**
+        - Operações de banco de dados devem ser atômicas.
+        - O valor do reembolso é o `price` registrado em `reserva_usuarios` para o pagamento original.
+        - O `is_first_payer` (se for o caso do reembolsado) é perdido e não reatribuído.
+      operationId: requestReservationRefund
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: reservationId
+          in: path
+          required: true
+          description: ID (UUID) da reserva para a qual o reembolso está sendo solicitado.
+          schema:
+            type: string
+            format: uuid
+            example: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+      responses:
+        '200':
+          description: Reembolso processado com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefundProcessedResponse'
+        '400':
+          description: Requisição inválida (ex `reservationId` em formato inválido).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Não autenticado. Token JWT ausente ou inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: |
+            Ação não permitida.
+            Possíveis causas:
+            - O usuário autenticado não é o pagador original ou não está na lista de reserva.
+            - O status da reserva não permite reembolso (ex: `RESERVADO`, `CONCLUIDO`).
+            - O organizador está tentando se reembolsar, mas não é o único participante da lista.
+            - O status de pagamento do usuário na reserva não é `pago_antecipado` ou `pago_presencial`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                refundNotAllowedStatus:
+                  value:
+                    message: "Reembolso não permitido para reservas com status 'RESERVADO'."
+                    code: "REFUND_NOT_ALLOWED_FOR_STATUS"
+                organizerCannotRefundWithOthers:
+                  value:
+                    message: "Organizador não pode solicitar reembolso individual se houver outros participantes na lista."
+                    code: "ORGANIZER_REFUND_RESTRICTED"
+                notPaidYet:
+                  value:
+                    message: "Usuário não possui pagamento confirmado para esta reserva para ser reembolsado."
+                    code: "USER_PAYMENT_NOT_CONFIRMED"
+        '404':
+          description: Reserva (`reservationId`) não encontrada, ou o usuário autenticado não está associado a esta reserva como participante.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                reservationNotFound:
+                  value:
+                    message: "Reserva com ID 'xyz' não encontrada."
+                    code: "RESERVATION_NOT_FOUND"
+                userNotInReservation:
+                  value:
+                    message: "Usuário não encontrado como participante nesta reserva."
+                    code: "USER_NOT_IN_RESERVATION"
+        '422': # Unprocessable Entity
+          description: |
+            Não foi possível processar o reembolso devido a um erro interno ou regra de negócio específica não atendida que impede a conclusão.
+            (Ex: falha ao creditar na carteira após outras etapas, inconsistência de dados detectada).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                walletCreditFailed:
+                  value:
+                    message: "Falha ao creditar o valor na carteira. A operação de reembolso foi revertida."
+                    code: "WALLET_CREDIT_FAILED"
+        '500':
+          description: Erro interno do servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/rents/{reservationId}/qr-code-payload: # Path ajustado para refletir o conteúdo da resposta
+    get:
+      tags:
+        - Rents
+        - Check-in
+      summary: Obtém o payload (token) para geração do QR Code de check-in
+      description: |
+        Recupera um token de check-in único, previamente gerado, para o usuário autenticado em uma reserva específica.
+        Este token deve ser usado pelo aplicativo cliente para gerar um QR Code.
+
+        **Condições para Recuperação:**
+        - O usuário deve estar autenticado.
+        - A reserva (`reservationId`) deve existir e estar com status `RESERVADO`.
+        - O usuário autenticado deve ser um participante da reserva com status de pagamento `pago_antecipado` ou `pago_presencial`.
+        - A requisição deve ser feita antes do horário de término da reserva (`reservas.fim`).
+
+        **Geração do Token (Proativa):**
+        Os tokens de check-in são gerados proativamente pelo sistema quando uma reserva transita para o status `RESERVADO`.
+        Este endpoint apenas recupera o token ativo (não usado e não expirado) existente para o usuário e reserva.
+
+        **Uso do Token:**
+        O `check_in_token` retornado é o payload que o cliente deve usar para renderizar o QR Code.
+        A verificação e o uso deste token para o check-in são feitos através do endpoint `/api/check-in/verify-qr`.
+      operationId: getReservationQrCodePayload
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: reservationId
+          in: path
+          required: true
+          description: ID (UUID) da reserva para a qual o payload do QR Code de check-in está sendo solicitado.
+          schema:
+            type: string
+            format: uuid
+            example: "c7a8b9d0-e1f2-3456-7890-abcdef123456"
+      responses:
+        '200':
+          description: Payload do QR Code (token de check-in e dados contextuais) retornado com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckInTokenResponse'
+        '400':
+          description: Requisição inválida (ex `reservationId` em formato inválido).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Não autenticado. Token JWT ausente ou inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: |
+            Acesso negado ou ação não permitida.
+            Possíveis causas:
+            - A reserva não está com status `RESERVADO`.
+            - O usuário autenticado não é um participante pago desta reserva.
+            - A tentativa de obter o token ocorreu após o término da reserva.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                reservationNotReserved:
+                  value:
+                    message: "Payload do QR Code de check-in só está disponível para reservas com status 'RESERVADO'."
+                    code: "CHECKIN_NOT_AVAILABLE_FOR_STATUS"
+                notPaidParticipant:
+                  value:
+                    message: "Usuário não é um participante com pagamento confirmado para esta reserva."
+                    code: "USER_NOT_PAID_PARTICIPANT"
+                reservationEnded:
+                  value:
+                    message: "Não é possível obter o payload do QR Code para uma reserva que já terminou."
+                    code: "RESERVATION_PERIOD_ENDED"
+        '404':
+          description: |
+            Recurso não encontrado.
+            Possíveis causas:
+            - Reserva (`reservationId`) não encontrada.
+            - Token de check-in ativo não encontrado para o usuário nesta reserva (pode indicar uma falha na geração proativa do token).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                reservationNotFound:
+                  value:
+                    message: "Reserva com ID 'xyz' não encontrada."
+                    code: "RESERVATION_NOT_FOUND"
+                checkInTokenNotFound: # Indica um problema na lógica de geração proativa
+                  value:
+                    message: "Token de check-in não encontrado para este usuário e reserva."
+                    code: "CHECK_IN_TOKEN_NOT_FOUND"
         '500':
           description: Erro interno do servidor.
           content:

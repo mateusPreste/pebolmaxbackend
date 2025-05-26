@@ -330,7 +330,8 @@ CREATE TABLE services_types (
 INSERT INTO services_types (service_type, service_name, description)
 VALUES ('reserva', 'Reserva de Quadra', 'Item pagável referente a uma reserva de quadra.'),
        ('carteira_deposito', 'Depósito em Carteira', 'Item representando um depósito na carteira.'),
-       ('carteira_saque', 'Saque da Carteira', 'Item representando um saque da carteira.');
+       ('carteira_saque', 'Saque da Carteira', 'Item representando um saque da carteira.'),
+       ('reembolso_reserva_participante', 'Reembolso de Participação em Reserva', 'Item representando o reembolso do valor pago por um participante de uma reserva.');
        -- Adicionar outros tipos como 'mensalidade_clube', 'inscricao_evento' conforme necessário.
 
 -- Tabela de services (AGORA REPRESENTA ITENS PAGÁVEIS ESPECÍFICOS):
@@ -482,12 +483,12 @@ CREATE TABLE reservas (
 CREATE TABLE reserva_usuarios (
     reserva_id UUID NOT NULL, -- ALTERADO para UUID
     usuario_id INT NOT NULL,
-    role VARCHAR(20) NOT NULL DEFAULT 'jogador' CHECK (role IN ('organizador', 'jogador')), -- NOVO CAMPO: Indica o papel do usuário na reserva
+    role VARCHAR(20) NOT NULL DEFAULT 'jogador' CHECK (role IN ('organizador', 'jogador')),  Indica o papel do usuário na reserva
     is_first_payer BOOLEAN NOT NULL DEFAULT FALSE, -- Indica se este membro fez o ṕrimeiro pagamento antecipado da lista (desconto)
-    status VARCHAR(20) NOT NULL CHECK (status IN ('pago_presencial', 'pago_antecipado','pagar_presencialmente')), -- estados pode ser pago ou pagamento pendente ('pagar_presencialmente')
-    is_guest BOOLEAN DEFAULT FALSE,
+    status VARCHAR(20) NOT NULL CHECK (status IN ('pago_presencial', 'pago_antecipado','pagar_presencialmente', 'saiu_da_lista')), -- estados pode ser pago ou pagamento pendente ('pagar_presencialmente')
     price NUMERIC(10,2) DEFAULT 0.00,
     transaction_id_pagamento INT NULL,
+    paid_at TIMESTAMP WITH TIME ZONE NULL,     
     PRIMARY KEY (reserva_id, usuario_id),
     FOREIGN KEY (reserva_id) REFERENCES reservas(id) ON DELETE CASCADE,
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
@@ -501,6 +502,23 @@ ON reserva_usuarios (reserva_id) WHERE role = 'organizador';
 -- Adiciona uma restrição para garantir que só haja um 'is_first_payer' TRUE por reserva.
 CREATE UNIQUE INDEX ux_reserva_usuarios_one_first_payer_per_reserva
 ON reserva_usuarios (reserva_id) WHERE is_first_payer = TRUE;
+
+CREATE TABLE check_in_tokens (
+    id SERIAL PRIMARY KEY,
+    token VARCHAR(255) UNIQUE NOT NULL, -- O token único (ex: um UUID ou uma string aleatória segura)
+    reservation_id UUID NOT NULL,
+    usuario_id INT NOT NULL,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL, -- Data/hora em que o token/possibilidade de check-in expira (ex: fim da reserva + uma margem)
+    is_used BOOLEAN NOT NULL DEFAULT FALSE, -- Indica se este token já foi usado para check-in
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    FOREIGN KEY (reservation_id) REFERENCES reservas(id) ON DELETE CASCADE,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    -- UNIQUE constraint para garantir que um usuário só tenha um token ativo por reserva
+    UNIQUE (reservation_id, usuario_id, is_used) WHERE is_used = FALSE -- Permite múltiplos tokens usados, mas apenas um não usado por vez
+);
+
+CREATE INDEX idx_check_in_tokens_lookup ON check_in_tokens (token); -- Para buscar pelo token durante a verificação
+CREATE INDEX idx_check_in_tokens_user_reservation_active ON check_in_tokens (reservation_id, usuario_id, is_used); -- Para buscar token ativo
 
 -- Observação para o backend/triggers:
 -- É crucial garantir que o 'usuario_id' do registro com 'role = 'organizador'' em 'reserva_usuarios'

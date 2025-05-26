@@ -115,37 +115,25 @@ endpoints:
       description: "Pesquisa quadras disponíveis com base nos filtros fornecidos."
 
   rents:
-    - path: /api/rents?page={page}&limit={limit}
+    - path: /api/rents?page={page}&limit={limit}&status={status}&role={role}
       method: GET
       description: "Retorna todas as listas de reservas do usuário logado, uma lista de reserva é uma tentativa de aluguel, que só é confirmado após o pagamento da quantidade mínima de pessoas"
 
-    - path: /api/rents/:listId
+    - path: /api/rents/:reservationId
       method: GET
-      description: "Retorna o objeto lista de reserva com id listId"
+      description: "Retorna o objeto lista de reserva com id reservationId"
 
-    - path: /api/rents/:listId/refund
+    - path: /api/rents/:reservationId/refund
       method: POST
       description: "Reembolsa um aluguel, o usuário deve ser removido da lista de reservas e o dinheiro deve ser devolvido para a carteira do usuário"
 
-    - path: /api/rents/:listId/qr-code
+    - path: /api/rents/:reservationId/qr-code-payload
       method: GET
-      description: "Retorna o qr-code para check-in"
+      description: "Retorna o payload para o qr-code de check-in"
 
-    - path: /api/rents/:listId/payers?page={page}&limit={limit}
+    - path: /api/rents/:reservationId/payers?page={page}&limit={limit}
       method: GET
       description: "Lista de pagantes do aluguel"
-
-    - path: /api/rents/:listId/enter-guest
-      method: POST
-      description: "Adiciona convidado"
-
-    - path: /api/rents/:listId/guests?page={page}&limit={limit}
-      method: GET
-      description: "Lista de convidados do aluguel"
-
-    - path: /api/rents/:listId/pay-guest
-      method: POST
-      description: "Pagar para um convidado, o usuário faz o pagamento e o convidado é adicionado a lista de reservas"
 
     - path: /api/rents/lists
       method: POST
