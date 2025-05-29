@@ -520,6 +520,23 @@ CREATE TABLE check_in_tokens (
 CREATE INDEX idx_check_in_tokens_lookup ON check_in_tokens (token); -- Para buscar pelo token durante a verificação
 CREATE INDEX idx_check_in_tokens_user_reservation_active ON check_in_tokens (reservation_id, usuario_id, is_used); -- Para buscar token ativo
 
+
+CREATE TABLE price_quotes (
+    id SERIAL PRIMARY KEY,
+    price_id UUID NOT NULL DEFAULT uuid_generate_v4() UNIQUE,
+    service_id INT NOT NULL,
+    usuario_id INT NOT NULL,
+    quoted_price NUMERIC(12, 2) NOT NULL,
+    currency VARCHAR(3) NOT NULL DEFAULT 'BRL',
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    is_used BOOLEAN NOT NULL DEFAULT FALSE,
+    used_at TIMESTAMP WITH TIME ZONE NULL, -- Quando foi usado para criar uma transação
+    FOREIGN KEY (service_id) REFERENCES services(service_id) ON DELETE CASCADE,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+);
+CREATE INDEX idx_price_quotes_lookup ON price_quotes (price_id, is_used, expires_at); -- Para buscar e validar cotação
+
 -- Observação para o backend/triggers:
 -- É crucial garantir que o 'usuario_id' do registro com 'role = 'organizador'' em 'reserva_usuarios'
 -- seja o mesmo que 'reservas.usuario_id'. Isso geralmente é feito através de um TRIGGER

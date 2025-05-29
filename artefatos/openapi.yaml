@@ -1636,9 +1636,8 @@ components:
         - competitor_reservation_id
         - competitor_occupation_percentage
 
-    ReservationParticipantDetail:
+    ParticipantBaseInfo:
       type: object
-      description: Detalhes de um participante (pago ou com pagamento pendente) na reserva.
       properties:
         user_id:
           type: integer
@@ -1650,27 +1649,86 @@ components:
           type: string
           format: url
           nullable: true
-        role_in_reservation:
+        role_in_reservation: # de reserva_usuarios.role
           type: string
-          enum: [organizer, jogador] # de reserva_usuarios.role
-          description: Papel do usuário nesta reserva.
-        payment_status_detail: # Usado para paid_participants
-          type: string
-          nullable: true # Será nulo se este schema for usado para pending_payment_participants
-          enum: [pago_presencial, pago_antecipado] # de reserva_usuarios.status
-          description: Detalhe do status de pagamento se já pago.
-        status_in_list_detail: # Usado para pending_payment_participants
-          type: string
-          nullable: true # Será nulo se este schema for usado para paid_participants
-          enum: [pagar_presencialmente] # de reserva_usuarios.status
-          description: Detalhe do status na lista se pagamento estiver pendente.
+          enum: [organizador, jogador]
         is_first_payer:
           type: boolean
-          description: Indica se este usuário foi o primeiro a pagar (relevante para desconto).
       required:
         - user_id
         - role_in_reservation
-        - is_first_payer # Mesmo que false
+        - is_first_payer
+
+    ReservationParticipantDetail: # Modificado para usar ParticipantBaseInfo e ajustar enums
+      type: object
+      description: Detalhes de um participante (pago, pendente ou que saiu) na reserva.
+      properties:
+        user_info: # Referencia ao base
+          $ref: '#/components/schemas/ParticipantBaseInfo'
+        payment_status_detail: # Detalhe se PAGO
+          type: string
+          nullable: true # Será nulo se o status for pagar_presencialmente ou saiu_da_lista
+          enum: [pago_presencial, pago_antecipado]
+          description: Detalhe do status de pagamento se já pago (de reserva_usuarios.status).
+        list_status_detail: # Detalhe se NÃO PAGO ou SAIU (novo nome para clareza)
+          type: string
+          nullable: true # Será nulo se o status for pago
+          enum: [pagar_presencialmente, saiu_da_lista]
+          description: Detalhe do status na lista se o pagamento estiver pendente ou se o usuário saiu (de reserva_usuarios.status).
+      required:
+        - user_info
+
+    PayerDetail:
+      type: object
+      description: Detalhes de um usuário que efetuou pagamento pela reserva.
+      properties:
+        user_info:
+          $ref: '#/components/schemas/ParticipantBaseInfo' # Reutiliza os dados base do participante
+        payment_confirmation_status: # Nomeado para refletir o que é (vindo de reserva_usuarios.status)
+          type: string
+          enum: [pago_presencial, pago_antecipado]
+          description: Confirmação do tipo de pagamento efetuado.
+        amount_paid:
+          type: string # Usar string para precisão monetária
+          description: Valor efetivamente pago pelo participante para esta reserva.
+          example: "15.00"
+        paid_at:
+          type: string
+          format: date-time
+          description: Data e hora em que o pagamento do participante foi confirmado.
+          example: "2024-07-15T10:30:00Z"
+      required:
+        - user_info
+        - payment_confirmation_status
+        - amount_paid
+        - paid_at
+
+    PaginatedReservationPayersResponse:
+      type: object
+      properties:
+        pagination:
+          type: object
+          properties:
+            current_page:
+              type: integer
+            per_page:
+              type: integer
+            total_items:
+              type: integer
+            total_pages:
+              type: integer
+          required:
+            - current_page
+            - per_page
+            - total_items
+            - total_pages
+        payers:
+          type: array
+          items:
+            $ref: '#/components/schemas/PayerDetail'
+      required:
+        - pagination
+        - payers
 
     AuthenticatedUserReservationStatus:
       type: object
@@ -1921,6 +1979,89 @@ components:
         - reservation_end_time_utc
         - court_name
         - local_name
+
+    ArenaReservationListCreationRequest:
+      type: object
+      description: Dados para a criação de uma nova lista de reserva pela administração da arena.
+      properties:
+        quadra_id:
+          type: integer
+          format: int64
+          description: ID da quadra para a qual a lista de reserva será criada.
+          example: 401
+        start_datetime_utc:
+          type: string
+          format: date-time
+          description: Data e hora de início da reserva, em UTC.
+          example: "2024-12-01T19:00:00Z"
+        duration_minutes:
+          type: integer
+          description: Duração da reserva em minutos. Deve ser um múltiplo de 30.
+          example: 60
+          enum: [30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360, 390, 420, 450, 480, 510, 540, 570, 600] # Exemplo de durações permitidas
+        min_pagantes:
+          type: integer
+          description: Número mínimo de pagantes para esta lista.
+          example: 8
+          minimum: 1
+      required:
+        - quadra_id
+        - start_datetime_utc
+        - duration_minutes
+        - min_pagantes
+
+    ArenaReservationListSummary:
+      type: object
+      description: Resumo de uma lista de reserva criada pela administração da arena.
+      properties:
+        reservation_id:
+          type: string
+          format: uuid
+          description: ID da reserva (lista) criada.
+        quadra_id:
+          type: integer
+          format: int64
+          description: ID da quadra.
+        quadra_name:
+          type: string
+          description: Nome da quadra.
+        local_id:
+          type: integer
+          format: int64
+          description: ID do local (arena).
+        local_name:
+          type: string
+          description: Nome do local (arena).
+        start_time_utc:
+          type: string
+          format: date-time
+          description: Data e hora de início da reserva (UTC).
+        end_time_utc:
+          type: string
+          format: date-time
+          description: Data e hora de término da reserva (UTC).
+        status:
+          type: string
+          description: Status inicial da reserva (será 'VAZIA').
+          example: "VAZIA"
+        min_pagantes:
+          type: integer
+          description: Número mínimo de pagantes configurado para a lista.
+        service_id:
+          type: integer
+          format: int64
+          description: ID do 'service' (item pagável, com amount_due = NULL) associado a esta reserva.
+      required:
+        - reservation_id
+        - quadra_id
+        - quadra_name
+        - local_id
+        - local_name
+        - start_time_utc
+        - end_time_utc
+        - status
+        - min_pagantes
+        - service_id
 
   securitySchemes:
     bearerAuth:
@@ -4712,6 +4853,194 @@ paths:
                   value:
                     message: "Token de check-in não encontrado para este usuário e reserva."
                     code: "CHECK_IN_TOKEN_NOT_FOUND"
+        '500':
+          description: Erro interno do servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  /api/rents/{reservationId}/payers:
+    get:
+      tags:
+        - Rents
+      summary: Lista os pagantes de uma reserva específica
+      description: |
+        Retorna uma lista paginada de todos os usuários que efetuaram pagamento
+        (status `pago_antecipado` ou `pago_presencial`) para a reserva especificada.
+        A lista é ordenada pela data e hora do pagamento, dos mais recentes para os mais antigos.
+
+        **Autorização:**
+        Apenas usuários que são participantes da reserva (presentes na tabela `reserva_usuarios`
+        para a `reservationId`, independentemente do seu próprio status de pagamento) podem acessar esta lista.
+      operationId: listReservationPayers
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: reservationId
+          in: path
+          required: true
+          description: ID (UUID) da reserva para a qual listar os pagantes.
+          schema:
+            type: string
+            format: uuid
+            example: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+        - name: page
+          in: query
+          description: Número da página para a lista de pagantes.
+          required: false
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: limit
+          in: query
+          description: Número de pagantes por página.
+          required: false
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 50
+      responses:
+        '200':
+          description: Lista de pagantes retornada com sucesso.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedReservationPayersResponse'
+        '400':
+          description: Requisição inválida (ex `reservationId` em formato inválido, parâmetros de paginação inválidos).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Não autenticado. Token JWT ausente ou inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: |
+            Acesso negado. O usuário autenticado não é participante da reserva especificada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Usuário não autorizado a visualizar os pagantes desta reserva."
+                code: "FORBIDDEN_VIEW_PAYERS"
+        '404':
+          description: Reserva (`reservationId`) não encontrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Reserva com ID 'xyz' não encontrada."
+                code: "RESERVATION_NOT_FOUND"
+        '500':
+          description: Erro interno do servidor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/rents/lists:
+    post:
+      tags:
+        - Rents
+        - Arena Management
+      summary: Cria uma nova lista de aluguel vazia (para gestão de arena)
+      description: |
+        Permite que um administrador de um local (arena) crie uma nova lista de aluguel (reserva)
+        com status inicial 'VAZIA'. Esta lista ficará disponível para os usuários encontrarem,
+        organizarem e preencherem com pagantes.
+        O preço para os participantes será determinado dinamicamente pelo sistema no momento em que
+        um usuário tentar se juntar à lista (via GET /api/price).
+
+        **Condições para Criação:**
+        - O usuário autenticado deve ser administrador do estabelecimento que gerencia o local da quadra.
+        - O horário solicitado deve estar no futuro e dentro do horário de funcionamento da quadra.
+        - Não pode haver conflito com uma reserva já confirmada (`RESERVADO`, `ESPERANDO`) para a mesma quadra e horário.
+          Se houver conflito com listas não confirmadas (`VAZIA`, `ABERTA`, `EM DISPUTA`), a criação é permitida,
+          e a nova lista entrará no sistema de disputa de prioridade.
+
+        **Item Pagável Associado (`service`):**
+        Um 'service' do tipo 'reserva' é criado para esta lista, mas seu campo `amount_due` será `NULL`.
+        O valor da reserva será construído dinamicamente a partir dos pagamentos dos participantes.
+      operationId: createArenaReservationList
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: Dados para a criação da lista de reserva.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ArenaReservationListCreationRequest'
+            example:
+              quadra_id: 401
+              start_datetime_utc: "2024-12-01T19:00:00Z"
+              duration_minutes: 60
+              min_pagantes: 8
+      responses:
+        '201':
+          description: Lista de reserva criada com sucesso. Retorna um resumo da lista criada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArenaReservationListSummary'
+          headers:
+            Location:
+              description: URL do recurso da reserva recém-criada.
+              schema:
+                type: string
+                format: url
+                example: "/api/rents/1a1a1a1a-1111-1111-1111-111111111111"
+        '400':
+          description: |
+            Requisição inválida.
+            Possíveis causas:
+            - Dados obrigatórios ausentes.
+            - `duration_minutes` não é um múltiplo de 30.
+            - `start_datetime_utc` não está no futuro.
+            - Horário solicitado fora do horário de funcionamento da quadra.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Não autenticado. Token JWT ausente ou inválido.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: |
+            Acesso negado. O usuário autenticado não é administrador do local/estabelecimento da quadra.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Quadra (`quadra_id`) não encontrada.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409': # Conflict
+          description: |
+            Conflito de horário. Já existe uma reserva confirmada (`RESERVADO` ou `ESPERANDO`)
+            para a mesma quadra no horário solicitado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                message: "Conflito de horário. Já existe uma reserva confirmada para esta quadra e horário."
+                code: "RESERVATION_SLOT_CONFLICT"
         '500':
           description: Erro interno do servidor.
           content:
