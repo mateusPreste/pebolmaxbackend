@@ -73,14 +73,14 @@ components:
             # Adicionar outros métodos aqui no futuro (ex: apple_sso, facebook_sso)
         params:
           oneOf: # Usamos oneOf aqui, e o discriminator ajudará a ferramenta a escolher
-            - $ref: '#/components/schemas/GoogleOAuthLoginParams'
-            - $ref: '#/components/schemas/EmailPasswordLoginParams'
+            - $ref: "#/components/schemas/GoogleOAuthLoginParams"
+            - $ref: "#/components/schemas/EmailPasswordLoginParams"
             # Adicionar refs para outros params aqui
           discriminator:
             propertyName: login_method # O campo no objeto raiz LoginRequest que determina o tipo de params
             mapping: # Mapeia o valor de login_method para o schema correto em 'oneOf'
-              google_oauth: '#/components/schemas/GoogleOAuthLoginParams'
-              email_password: '#/components/schemas/EmailPasswordLoginParams'
+              google_oauth: "#/components/schemas/GoogleOAuthLoginParams"
+              email_password: "#/components/schemas/EmailPasswordLoginParams"
               # Adicionar mapeamentos para outros métodos aqui
       required:
         - login_method
@@ -169,7 +169,7 @@ components:
           default: 100
           readOnly: true
         preferred_modality:
-          $ref: '#/components/schemas/Modality'
+          $ref: "#/components/schemas/Modality"
           nullable: true
           description: Modalidade preferida do usuário.
         createdAt:
@@ -186,10 +186,10 @@ components:
         - id
         - name
         - preferred_modality
-    
+
     User:
       allOf:
-        - $ref: '#/components/schemas/UserBase'
+        - $ref: "#/components/schemas/UserBase"
         - type: object
           properties:
             cpf: # Da tabela 'usuarios.cpf'
@@ -235,7 +235,7 @@ components:
 
     PublicUser:
       allOf:
-        - $ref: '#/components/schemas/UserBase'
+        - $ref: "#/components/schemas/UserBase"
         # ... pode adicionar/remover campos públicos
 
     UserUpdatePayload:
@@ -269,7 +269,6 @@ components:
           example: 3
       minProperties: 1 # Pelo menos uma propriedade deve ser enviada para um PATCH
 
-    
     Club:
       type: object
       description: Representa um clube no sistema.
@@ -347,7 +346,7 @@ components:
         - is_member
         # photo_url pode ser nulo se não houver imagem
         # club_creation_date e created_by_user_id são geralmente sempre presentes
-    
+
     # Para a resposta paginada de clubes
     PaginatedClubsResponse:
       type: object
@@ -355,7 +354,7 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/Club'
+            $ref: "#/components/schemas/Club"
         page:
           type: integer
           example: 1
@@ -374,7 +373,6 @@ components:
         - limit
         - total
         - totalPages
-
 
     WalletBalance:
       type: object
@@ -480,16 +478,16 @@ components:
       description: Resposta contendo os detalhes da carteira do usuário.
       properties:
         wallet_balance:
-          $ref: '#/components/schemas/WalletBalance'
+          $ref: "#/components/schemas/WalletBalance"
         recent_transactions:
           type: array
           items:
-            $ref: '#/components/schemas/WalletTransactionSummary'
+            $ref: "#/components/schemas/WalletTransactionSummary"
           description: Lista das 10 transações mais recentes que afetaram o saldo da carteira.
         payment_methods:
           type: array
           items:
-            $ref: '#/components/schemas/PaymentMethodSummary'
+            $ref: "#/components/schemas/PaymentMethodSummary"
           description: Lista das formas de pagamento ativas do usuário.
       required:
         - wallet_balance
@@ -548,16 +546,15 @@ components:
       type: object
       description: Detalhes específicos do método de depósito escolhido.
       oneOf:
-        - $ref: '#/components/schemas/PixOpenFinanceDepositDetails'
-        - $ref: '#/components/schemas/CreditCardDepositDetails'
+        - $ref: "#/components/schemas/PixOpenFinanceDepositDetails"
+        - $ref: "#/components/schemas/CreditCardDepositDetails"
       discriminator:
         propertyName: method_type # Este campo nos schemas filhos irá discriminar
         mapping:
-          pix_open_finance: '#/components/schemas/PixOpenFinanceDepositDetails'
-          credit_card: '#/components/schemas/CreditCardDepositDetails'
+          pix_open_finance: "#/components/schemas/PixOpenFinanceDepositDetails"
+          credit_card: "#/components/schemas/CreditCardDepositDetails"
       required: # O discriminator exige que o campo propertyName esteja no schema pai ou filho
         - method_type
-
 
     WalletDepositRequest:
       type: object
@@ -575,7 +572,7 @@ components:
           default: "BRL"
           example: "BRL"
         deposit_method_details:
-          $ref: '#/components/schemas/WalletDepositMethodDetails'
+          $ref: "#/components/schemas/WalletDepositMethodDetails"
       required:
         - amount
         - deposit_method_details
@@ -658,7 +655,7 @@ components:
           description: ID do item de depósito gerado internamente.
           example: 502
         charge_details: # Contém os detalhes da cobrança do cartão
-          $ref: '#/components/schemas/CreditCardChargeDetails'
+          $ref: "#/components/schemas/CreditCardChargeDetails"
       required:
         - payment_type
         - payable_item_id
@@ -668,16 +665,15 @@ components:
       type: object
       description: Resposta da solicitação de depósito, contendo instruções de pagamento ou resultado da cobrança.
       oneOf:
-        - $ref: '#/components/schemas/PixOpenFinanceDepositResponsePayload'
-        - $ref: '#/components/schemas/CreditCardDepositResponsePayload'
+        - $ref: "#/components/schemas/PixOpenFinanceDepositResponsePayload"
+        - $ref: "#/components/schemas/CreditCardDepositResponsePayload"
       discriminator:
         propertyName: payment_type # Este campo nos schemas filhos irá discriminar
         mapping:
-          pix_open_finance_instructions: '#/components/schemas/PixOpenFinanceDepositResponsePayload'
-          credit_card_charge_result: '#/components/schemas/CreditCardDepositResponsePayload'
+          pix_open_finance_instructions: "#/components/schemas/PixOpenFinanceDepositResponsePayload"
+          credit_card_charge_result: "#/components/schemas/CreditCardDepositResponsePayload"
       required: # O discriminator exige que o campo propertyName esteja no schema pai ou filho
         - payment_type
-    
 
     WalletWithdrawalRequest:
       type: object
@@ -742,7 +738,6 @@ components:
         - transaction_id
         - status
 
-    
     UserTransactionItem:
       type: object
       description: Detalhes de uma transação financeira do usuário na plataforma.
@@ -783,11 +778,26 @@ components:
         status:
           type: string
           description: Status da transação.
-          enum: [pendente, processando, rejeitado, concluida, cancelado, expirado, reembolsada]
+          enum:
+            [
+              pendente,
+              processando,
+              rejeitado,
+              concluida,
+              cancelado,
+              expirado,
+              reembolsada,
+            ]
           example: "concluida"
         payment_method_type:
           type: string
-          enum: [pix, cartao, wallet_balance, other_external, internal_adjustment] # Adicionado internal_adjustment
+          enum: [
+              pix,
+              cartao,
+              wallet_balance,
+              other_external,
+              internal_adjustment,
+            ] # Adicionado internal_adjustment
           nullable: true
           description: Tipo de método de pagamento usado ou natureza da movimentação.
           example: "wallet_balance"
@@ -823,7 +833,7 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/UserTransactionItem'
+            $ref: "#/components/schemas/UserTransactionItem"
         page:
           type: integer
           example: 1
@@ -842,7 +852,7 @@ components:
         - limit
         - totalItems
         - totalPages
-    
+
     ClubUpdatePayload: # Schema para o corpo da requisição de atualização do clube (multipart/form-data)
       type: object
       properties: # Todos os campos são opcionais para um PATCH
@@ -876,13 +886,13 @@ components:
           format: binary
           nullable: true # Opcional: só envia se quiser trocar a imagem
           description: Novo arquivo de imagem para o clube (ex logo). Se fornecido, substitui a imagem existente.
-     
+
     ClubMemberListItem:
       type: object
       description: Informações de um membro listado de um clube.
       properties:
         user:
-          $ref: '#/components/schemas/PublicUser' # Contém id, name, nickname, photo_url
+          $ref: "#/components/schemas/PublicUser" # Contém id, name, nickname, photo_url
         role_in_club:
           type: string
           description: O cargo do usuário neste clube.
@@ -898,7 +908,6 @@ components:
         - role_in_club
         - joined_at
 
-    
     ClubMemberUpdateRequest:
       type: object
       description: Dados para atualizar o cargo de um membro do clube.
@@ -918,7 +927,7 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/ClubMemberListItem'
+            $ref: "#/components/schemas/ClubMemberListItem"
         page:
           type: integer
           description: Número da página atual.
@@ -966,7 +975,7 @@ components:
         - status
         - requested_at
         - message
-    
+
     AddClubMemberRequest:
       type: object
       description: Dados para adicionar um novo membro a um clube.
@@ -984,7 +993,6 @@ components:
           example: "membro"
       required:
         - userId
-  
 
     ClubJoinRequestItem:
       type: object
@@ -996,7 +1004,7 @@ components:
           description: ID da solicitação de entrada.
           example: 101
         user: # Informações do solicitante
-          $ref: '#/components/schemas/PublicUser' # Reutiliza o schema PublicUser
+          $ref: "#/components/schemas/PublicUser" # Reutiliza o schema PublicUser
         requested_at: # clube_solicitacoes_entrada.data_solicitacao
           type: string
           format: date-time
@@ -1014,7 +1022,7 @@ components:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/ClubJoinRequestItem'
+            $ref: "#/components/schemas/ClubJoinRequestItem"
         page:
           type: integer
           example: 1
@@ -1034,7 +1042,6 @@ components:
         - totalItems
         - totalPages
 
-    
     LocationSummaryForEstablishment:
       type: object
       description: Resumo de um local (arena física) pertencente a um estabelecimento.
@@ -1112,12 +1119,12 @@ components:
         payment_methods:
           type: array
           items:
-            $ref: '#/components/schemas/EstablishmentPaymentMethod'
+            $ref: "#/components/schemas/EstablishmentPaymentMethod"
           description: Formas de pagamento configuradas pelo estabelecimento.
         locations:
           type: array
           items:
-            $ref: '#/components/schemas/LocationSummaryForEstablishment'
+            $ref: "#/components/schemas/LocationSummaryForEstablishment"
           description: Lista de locais (arenas) pertencentes a este estabelecimento.
       required:
         - id
@@ -1139,7 +1146,18 @@ components:
         list_status:
           type: string
           description: Status atual da lista/reserva.
-          enum: [VAZIA, ABERTA, EM DISPUTA, ESPERANDO, RESERVADO, PERDIDO, CANCELADA, CANCELADA_PELA_ARENA, CONCLUIDO]
+          enum:
+            [
+              VAZIA,
+              ABERTA,
+              EM DISPUTA,
+              ESPERANDO,
+              RESERVADO,
+              PERDIDO,
+              CANCELADA,
+              CANCELADA_PELA_ARENA,
+              CONCLUIDO,
+            ]
         modality:
           type: string
           description: Modalidade da reserva.
@@ -1212,7 +1230,15 @@ components:
         status:
           type: string
           description: Status consolidado do slot de tempo.
-          enum: [available, unavailable_operational, contested, prioritized, booked, past_reservation]
+          enum:
+            [
+              available,
+              unavailable_operational,
+              contested,
+              prioritized,
+              booked,
+              past_reservation,
+            ]
           # available: Livre e operacional
           # unavailable_operational: Fechado por horário regular ou exceção de indisponibilidade
           # contested: Ocupado por listas VAZIA, ABERTA, ou EM DISPUTA
@@ -1222,7 +1248,7 @@ components:
         competing_lists:
           type: array
           items:
-            $ref: '#/components/schemas/ArenaCompetingListDetail'
+            $ref: "#/components/schemas/ArenaCompetingListDetail"
           description: Lista de reservas/listas que ocupam ou competem por este slot de tempo.
       required:
         - time
@@ -1241,7 +1267,7 @@ components:
         time_slots:
           type: array
           items:
-            $ref: '#/components/schemas/ArenaTimeSlot'
+            $ref: "#/components/schemas/ArenaTimeSlot"
       required:
         - court_id
         - court_name
@@ -1265,7 +1291,7 @@ components:
         courts_availability:
           type: array
           items:
-            $ref: '#/components/schemas/CourtAvailabilityDetail'
+            $ref: "#/components/schemas/CourtAvailabilityDetail"
       required:
         - local_id
         - local_name
@@ -1298,7 +1324,7 @@ components:
           type: string
           description: Nome da modalidade.
         sport:
-          $ref: '#/components/schemas/SportSummary'
+          $ref: "#/components/schemas/SportSummary"
       required:
         - id
         - name
@@ -1401,7 +1427,7 @@ components:
         competing_lists_summary:
           type: array
           items:
-            $ref: '#/components/schemas/SearchCompetingListSummary'
+            $ref: "#/components/schemas/SearchCompetingListSummary"
           description: Presente se slot_status for "available_with_competition", detalhando as listas existentes.
       required:
         - requested_start_datetime_utc
@@ -1425,14 +1451,14 @@ components:
         supported_modalities: # Alterado de main_modality
           type: array
           items:
-            $ref: '#/components/schemas/ModalityWithSportSummary'
+            $ref: "#/components/schemas/ModalityWithSportSummary"
           description: Lista de modalidades que esta quadra suporta.
         local_details:
-          $ref: '#/components/schemas/SearchCourtLocalDetails'
+          $ref: "#/components/schemas/SearchCourtLocalDetails"
         establishment_details:
-          $ref: '#/components/schemas/SearchCourtEstablishmentDetails'
+          $ref: "#/components/schemas/SearchCourtEstablishmentDetails"
         availability_slot_info:
-          $ref: '#/components/schemas/SearchAvailabilitySlotInfo'
+          $ref: "#/components/schemas/SearchAvailabilitySlotInfo"
       required:
         - court_id
         - court_name
@@ -1452,7 +1478,7 @@ components:
               format: date
             time:
               type: string
-              pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
+              pattern: "^([01]?[0-9]|2[0-3]):[0-5][0-9]$"
             duration_minutes:
               type: integer
             city_filter:
@@ -1484,7 +1510,7 @@ components:
         available_courts:
           type: array
           items:
-            $ref: '#/components/schemas/AvailableCourtSearchResultItem'
+            $ref: "#/components/schemas/AvailableCourtSearchResultItem"
       required:
         - search_criteria
         - pagination
@@ -1541,7 +1567,18 @@ components:
         status:
           type: string
           description: Status atual da reserva/lista.
-          enum: [VAZIA, ABERTA, EM DISPUTA, ESPERANDO, RESERVADO, PERDIDO, CANCELADA, CANCELADA_PELA_ARENA, CONCLUIDO]
+          enum:
+            [
+              VAZIA,
+              ABERTA,
+              EM DISPUTA,
+              ESPERANDO,
+              RESERVADO,
+              PERDIDO,
+              CANCELADA,
+              CANCELADA_PELA_ARENA,
+              CONCLUIDO,
+            ]
         court_name:
           type: string
           description: Nome da quadra.
@@ -1566,13 +1603,13 @@ components:
           description: Modalidade da reserva.
           enum: [usuarios, times]
         organizer_details:
-          $ref: '#/components/schemas/UserRentOrganizerDetails'
+          $ref: "#/components/schemas/UserRentOrganizerDetails"
           nullable: true # Será nulo se o usuário autenticado for o organizador ou se a lista for VAZIA
         club_details:
-          $ref: '#/components/schemas/UserRentClubDetails'
+          $ref: "#/components/schemas/UserRentClubDetails"
           nullable: true # Será nulo se não houver clube associado (ex: lista VAZIA)
         participants_info:
-          $ref: '#/components/schemas/UserRentParticipantsInfo'
+          $ref: "#/components/schemas/UserRentParticipantsInfo"
         user_role_in_reservation:
           type: string
           enum: [organizer, participant, none] # 'none' se for uma lista VAZIA que ele criou como admin de arena e ainda não tem vinculo como jogador/organizador pessoal
@@ -1611,7 +1648,7 @@ components:
         user_rents:
           type: array
           items:
-            $ref: '#/components/schemas/UserRentListItem'
+            $ref: "#/components/schemas/UserRentListItem"
       required:
         - pagination
         - user_rents
@@ -1664,7 +1701,7 @@ components:
       description: Detalhes de um participante (pago, pendente ou que saiu) na reserva.
       properties:
         user_info: # Referencia ao base
-          $ref: '#/components/schemas/ParticipantBaseInfo'
+          $ref: "#/components/schemas/ParticipantBaseInfo"
         payment_status_detail: # Detalhe se PAGO
           type: string
           nullable: true # Será nulo se o status for pagar_presencialmente ou saiu_da_lista
@@ -1683,7 +1720,7 @@ components:
       description: Detalhes de um usuário que efetuou pagamento pela reserva.
       properties:
         user_info:
-          $ref: '#/components/schemas/ParticipantBaseInfo' # Reutiliza os dados base do participante
+          $ref: "#/components/schemas/ParticipantBaseInfo" # Reutiliza os dados base do participante
         payment_confirmation_status: # Nomeado para refletir o que é (vindo de reserva_usuarios.status)
           type: string
           enum: [pago_presencial, pago_antecipado]
@@ -1725,7 +1762,7 @@ components:
         payers:
           type: array
           items:
-            $ref: '#/components/schemas/PayerDetail'
+            $ref: "#/components/schemas/PayerDetail"
       required:
         - pagination
         - payers
@@ -1739,7 +1776,13 @@ components:
           description: Indica se o usuário autenticado está envolvido com esta lista (organizador ou participante).
         role: # Papel do usuário autenticado + status de pagamento agregado
           type: string
-          enum: [organizer, participant_paid, participant_pending_payment, not_involved]
+          enum:
+            [
+              organizer,
+              participant_paid,
+              participant_pending_payment,
+              not_involved,
+            ]
           description: Papel e status de pagamento do usuário autenticado nesta lista.
         is_first_payer_for_this_list:
           type: boolean
@@ -1747,7 +1790,13 @@ components:
           description: Indica se o usuário autenticado foi o primeiro pagante desta lista.
         payment_status_for_this_list: # Status de pagamento específico do usuário autenticado
           type: string
-          enum: [pago_antecipado, pago_presencial, pagar_presencialmente, not_applicable]
+          enum:
+            [
+              pago_antecipado,
+              pago_presencial,
+              pagar_presencialmente,
+              not_applicable,
+            ]
           description: Status de pagamento específico do usuário autenticado para esta lista.
         price_for_auth_user:
           type: string # String para valor monetário
@@ -1784,7 +1833,8 @@ components:
             state: { type: string }
             postal_code: { type: string }
             country: { type: string }
-          required: [street, number, neighborhood, city, state, postal_code, country]
+          required:
+            [street, number, neighborhood, city, state, postal_code, country]
         coordinates:
           type: object
           properties:
@@ -1809,7 +1859,7 @@ components:
         supported_modalities:
           type: array
           items:
-            $ref: '#/components/schemas/ModalityWithSportSummary' # Definido em discussões anteriores
+            $ref: "#/components/schemas/ModalityWithSportSummary" # Definido em discussões anteriores
       required: [court_id, court_name, supported_modalities]
 
     ReservationDetailResponse: # Schema principal da resposta
@@ -1822,7 +1872,18 @@ components:
           description: ID (UUID) da reserva.
         status:
           type: string
-          enum: [VAZIA, ABERTA, EM DISPUTA, ESPERANDO, RESERVADO, PERDIDO, CANCELADA, CANCELADA_PELA_ARENA, CONCLUIDO]
+          enum:
+            [
+              VAZIA,
+              ABERTA,
+              EM DISPUTA,
+              ESPERANDO,
+              RESERVADO,
+              PERDIDO,
+              CANCELADA,
+              CANCELADA_PELA_ARENA,
+              CONCLUIDO,
+            ]
           description: Status atual da reserva.
         modality:
           type: string
@@ -1848,36 +1909,36 @@ components:
         competing_lists_info:
           type: array
           items:
-            $ref: '#/components/schemas/ReservationCompetingListSummary'
+            $ref: "#/components/schemas/ReservationCompetingListSummary"
           description: |
             Detalhes resumidos de outras listas/reservas que competem pelo mesmo horário/quadra.
             Preenchido se esta reserva estiver em 'EM DISPUTA', ou 'ABERTA' e houver conflito.
         organizer_info:
-          $ref: '#/components/schemas/UserRentOrganizerDetails' # Schema para {user_id, nickname, photo_url}
+          $ref: "#/components/schemas/UserRentOrganizerDetails" # Schema para {user_id, nickname, photo_url}
           nullable: true
           description: Informações do organizador da reserva (nulo se a lista for 'VAZIA').
         club_info:
-          $ref: '#/components/schemas/UserRentClubDetails' # Schema para {club_id, name, photo_url}
+          $ref: "#/components/schemas/UserRentClubDetails" # Schema para {club_id, name, photo_url}
           nullable: true
           description: Informações do clube associado (nulo se não houver).
         location_info:
-          $ref: '#/components/schemas/ReservationLocationInfo'
+          $ref: "#/components/schemas/ReservationLocationInfo"
         court_info:
-          $ref: '#/components/schemas/ReservationCourtInfo'
+          $ref: "#/components/schemas/ReservationCourtInfo"
         participants_summary:
-          $ref: '#/components/schemas/UserRentParticipantsInfo' # Schema para {min_payers_required, current_paid_payers, pending_payment_payers, total_value_collected_so_far}
+          $ref: "#/components/schemas/UserRentParticipantsInfo" # Schema para {min_payers_required, current_paid_payers, pending_payment_payers, total_value_collected_so_far}
         paid_participants:
           type: array
           items:
-            $ref: '#/components/schemas/ReservationParticipantDetail'
+            $ref: "#/components/schemas/ReservationParticipantDetail"
           description: Lista de participantes que já efetuaram o pagamento.
         pending_payment_participants:
           type: array
           items:
-            $ref: '#/components/schemas/ReservationParticipantDetail'
+            $ref: "#/components/schemas/ReservationParticipantDetail"
           description: Lista de participantes com pagamento pendente ('pagar_presencialmente').
         authenticated_user_status:
-          $ref: '#/components/schemas/AuthenticatedUserReservationStatus'
+          $ref: "#/components/schemas/AuthenticatedUserReservationStatus"
       required:
         - reservation_id
         - status
@@ -1924,7 +1985,19 @@ components:
           type: string
           nullable: true # Pode ser nulo se o status da reserva não mudar
           description: O novo status da reserva após a reavaliação (se houver mudança).
-          enum: [VAZIA, ABERTA, EM DISPUTA, ESPERANDO, RESERVADO, PERDIDO, CANCELADA, CANCELADA_PELA_ARENA, CONCLUIDO, null]
+          enum:
+            [
+              VAZIA,
+              ABERTA,
+              EM DISPUTA,
+              ESPERANDO,
+              RESERVADO,
+              PERDIDO,
+              CANCELADA,
+              CANCELADA_PELA_ARENA,
+              CONCLUIDO,
+              null,
+            ]
           example: "ABERTA"
       required:
         - message
@@ -1998,7 +2071,28 @@ components:
           type: integer
           description: Duração da reserva em minutos. Deve ser um múltiplo de 30.
           example: 60
-          enum: [30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360, 390, 420, 450, 480, 510, 540, 570, 600] # Exemplo de durações permitidas
+          enum: [
+              30,
+              60,
+              90,
+              120,
+              150,
+              180,
+              210,
+              240,
+              270,
+              300,
+              330,
+              360,
+              390,
+              420,
+              450,
+              480,
+              510,
+              540,
+              570,
+              600,
+            ] # Exemplo de durações permitidas
         min_pagantes:
           type: integer
           description: Número mínimo de pagantes para esta lista.
@@ -2063,6 +2157,168 @@ components:
         - min_pagantes
         - service_id
 
+    CreditCardPaymentDetails:
+      type: object
+      description: Detalhes para pagamento com um Cartão de Crédito previamente salvo.
+      properties:
+        method_type:
+          {
+            type: string,
+            enum: [credit_card],
+            description: "Tipo do método de pagamento.",
+          }
+        saved_card_id: # Agora é obrigatório se method_type for credit_card
+          type: integer
+          format: int64
+          description: ID de um cartão de crédito previamente salvo pelo usuário (referência a contas.id).
+          example: 102
+      required:
+        - method_type
+        - saved_card_id # Torna-se obrigatório
+
+    PixOpenFinancePaymentDetails: # Para o request
+      type: object
+      description: Detalhes para iniciar um pagamento via PIX Open Finance.
+      properties:
+        method_type:
+          {
+            type: string,
+            enum: [pix_open_finance],
+            description: "Tipo do método de pagamento.",
+          }
+        # institution_id: # Opcional, se o usuário puder pré-selecionar o banco no frontend
+        #   type: string
+        #   nullable: true
+        #   description: "ID da instituição financeira do pagador para iniciação do pagamento Open Finance."
+        #   example: "001"
+      required:
+        - method_type
+
+    ExternalPaymentMethodDetails: # Discriminator para o request
+      type: object
+      description: Detalhes específicos do método de pagamento externo escolhido.
+      oneOf:
+        - $ref: "#/components/schemas/CreditCardPaymentDetails"
+        - $ref: "#/components/schemas/PixOpenFinancePaymentDetails"
+      discriminator:
+        propertyName: method_type
+        mapping:
+          credit_card: "#/components/schemas/CreditCardPaymentDetails"
+          pix_open_finance: "#/components/schemas/PixOpenFinancePaymentDetails"
+      required: # O campo discriminador deve estar presente
+        - method_type
+
+    CreatePaymentOrderFromQuoteRequest:
+      type: object
+      description: Dados para criar uma ordem de pagamento a partir de uma cotação de preço.
+      properties:
+        price_id:
+          type: string
+          format: uuid
+          description: O ID da cotação de preço (obtida de GET /api/price) que está sendo paga.
+          example: "d2a7a8f5-b29c-4d4f-a8e3-b0d1c7a9b3e2"
+        payment_method_details:
+          $ref: "#/components/schemas/ExternalPaymentMethodDetails"
+      required:
+        - price_id
+        - payment_method_details
+
+    PixOpenFinanceInitiationPayload: # Para a resposta
+      type: object
+      description: Instruções para completar um pagamento via PIX Open Finance (Iniciação).
+      properties:
+        payment_type:
+          type: string
+          enum: [pix_open_finance_initiation]
+          description: Tipo da instrução de pagamento.
+        payable_item_id: # É o service_id da cotação original
+          type: integer
+          format: int64
+          description: ID do item pagável (service_id) ao qual esta ordem de pagamento se refere.
+        identificadorPagamento:
+          type: string
+          description: Identificador da iniciação de pagamento no sistema Open Finance (retorno do gateway/SPE).
+          example: "urn:efi:ae71713f-875b-4af3-9d85-0bcb43288847"
+        redirectURI:
+          type: string
+          format: url
+          description: URI para onde o usuário deve ser redirecionado para autorizar o pagamento no seu banco.
+          example: "https://open-finance.banco.com.br/authorize?request=eyJjd..."
+      required:
+        - payment_type
+        - payable_item_id
+        - identificadorPagamento
+        - redirectURI
+
+    CreditCardChargeResultPayload: # Para a resposta
+      type: object
+      description: Resultado de uma tentativa de cobrança com cartão de crédito.
+      properties:
+        payment_type:
+          type: string
+          enum: [credit_card_charge_result]
+          description: Tipo da instrução de pagamento.
+        payable_item_id: # É o service_id da cotação original
+          type: integer
+          format: int64
+          description: ID do item pagável (service_id) ao qual esta ordem de pagamento se refere.
+        charge_details:
+          $ref:
+            "#/components/schemas/CreditCardChargeDetails" # Reutiliza o schema de WalletDeposit, garantindo que os campos correspondam
+            # Ex: 'status' e 'payment_method_type'
+      required:
+        - payment_type
+        - payable_item_id
+        - charge_details
+
+    PaymentInstructions: # Discriminator para a resposta
+      type: object
+      description: Instruções de pagamento ou resultado da tentativa de cobrança.
+      oneOf:
+        - $ref: "#/components/schemas/PixOpenFinanceInitiationPayload"
+        - $ref: "#/components/schemas/CreditCardChargeResultPayload"
+        # Adicionar outros tipos de instrução aqui se necessário (ex: para boleto, ou cobrança PIX tradicional com QR)
+      discriminator:
+        propertyName: payment_type # Campo que diferencia o tipo de payload
+        mapping:
+          pix_open_finance_initiation: "#/components/schemas/PixOpenFinanceInitiationPayload"
+          credit_card_charge_result: "#/components/schemas/CreditCardChargeResultPayload"
+      required: # O campo discriminador deve estar presente
+        - payment_type
+
+    PaymentOrderInitiatedResponse:
+      type: object
+      description: Resposta após a criação de uma ordem de pagamento e tentativa inicial de cobrança/geração de instruções.
+      properties:
+        service_id: # ID do service original da cotação
+          type: integer
+          format: int64
+          description: ID do item pagável (service) para o qual esta ordem foi criada.
+        amount_charged:
+          type: string # Usar string para precisão monetária
+          description: O valor que está sendo cobrado, conforme a cotação de preço.
+          example: "50.00"
+        currency:
+          type: string
+          description: Moeda da cobrança.
+          example: "BRL"
+        # transaction_id: REMOVIDO conforme solicitação
+        #   type: integer
+        #   format: int64
+        #   description: ID da transação interna criada para esta ordem de pagamento.
+        status_overview: # Um status geral da ordem/tentativa inicial
+          type: string
+          description: Um status geral indicando o resultado da tentativa de iniciar o pagamento (ex 'instructions_generated', 'charge_attempted', 'requires_user_action').
+          example: "requires_user_action" # Exemplo se for um PIX OF ou cartão com 3DS
+        payment_instructions:
+          $ref: "#/components/schemas/PaymentInstructions"
+      required:
+        - service_id
+        - amount_charged
+        - currency
+        - status_overview
+        - payment_instructions
+
   securitySchemes:
     bearerAuth:
       type: http
@@ -2100,7 +2356,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/LoginRequest' # Referencia o schema base LoginRequest
+              $ref: "#/components/schemas/LoginRequest" # Referencia o schema base LoginRequest
             examples: # Adicionar exemplos para cada método
               googleLogin:
                 summary: Exemplo de login com Google OAuth
@@ -2116,7 +2372,7 @@ paths:
                     email: "usuario@example.com"
                     password: "s3nh@F0rt3"
       responses:
-        '200':
+        "200":
           description: Login bem-sucedido. Usuário autenticado.
           content:
             application/json:
@@ -2133,12 +2389,12 @@ paths:
                     description: Token de acesso JWT para autenticação em chamadas subsequentes da API.
                     example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhMWIyYzNkNC1lNWY2LTc4OTAtMTIzNC01Njc4OTBhYmNkZWYiLCJpYXQiOjE2MTYyMzkwMjJ9.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
                   user:
-                    $ref: '#/components/schemas/User'
+                    $ref: "#/components/schemas/User"
                 required:
                   - userId
                   - token
                   - user
-        '400':
+        "400":
           description: |
             Credenciais validadas mas o usuário necessita completar o cadastro.
             Pode ocorrer se o usuário associado ao `id_token` não existe e informações adicionais são necessárias para criá-lo, ou se o usuário existe mas falta completar o perfil.
@@ -2147,7 +2403,7 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/ErrorResponse'
+                  - $ref: "#/components/schemas/ErrorResponse"
                   - type: object
                     properties:
                       registration_token:
@@ -2174,7 +2430,7 @@ paths:
                   value:
                     message: "Método de login não suportado."
                     code: "UNSUPPORTED_LOGIN_METHOD"
-        '401':
+        "401":
           description: |
             Falha na autenticação.
             - Para OAuth: `id_token` inválido ou não verificado.
@@ -2182,7 +2438,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               examples:
                 invalidOAuthToken:
                   value:
@@ -2192,12 +2448,12 @@ paths:
                   value:
                     message: "Credenciais inválidas."
                     code: "EMAIL_PASSWORD_AUTHENTICATION_FAILED"
-        '500':
+        "500":
           description: Erro interno do servidor.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/auth/complete-registration:
     post:
@@ -2212,7 +2468,7 @@ paths:
         Para esta definição, vamos assumir que um JWT do usuário "incompleto" é usado para autorizar esta chamada, ou o `registration_token` é enviado no corpo.
       operationId: completeUserRegistration
       security: # Se for protegido pelo JWT do usuário incompleto
-         - bearerAuth: []
+        - bearerAuth: []
       requestBody:
         description: Dados necessários para completar o registro do usuário.
         required: true
@@ -2254,7 +2510,7 @@ paths:
                 - cpf
                 - preferred_modality_id
       responses:
-        '200':
+        "200":
           description: Registro completado com sucesso. Perfil do usuário atualizado. Retorna o objeto User completo e um novo token de API se o anterior era de escopo limitado.
           content:
             application/json:
@@ -2265,40 +2521,40 @@ paths:
                     type: string
                     description: Novo token de acesso JWT com permissões completas.
                   user:
-                    $ref: '#/components/schemas/User'
+                    $ref: "#/components/schemas/User"
                 required:
                   - user
-        '400':
+        "400":
           description: |
             Erro de validação nos dados fornecidos (ex: CPF inválido, campos obrigatórios faltando, `registration_token` inválido/expirado se usado).
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               examples:
                 invalidModalityId:
                   value:
                     message: "O ID da modalidade fornecido não é válido."
                     code: "INVALID_MODALITY_ID"
-        '401':
+        "401":
           description: Não autorizado (ex `registration_token` inválido ou não fornecido quando esperado, ou JWT do usuário incompleto inválido).
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '409':
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
           description: Conflito de dados (ex CPF ou apelido já existem).
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
           description: Erro interno do servidor.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  
+                $ref: "#/components/schemas/ErrorResponse"
+
   /api/users/me:
     get:
       tags:
@@ -2309,28 +2565,28 @@ paths:
       security:
         - bearerAuth: [] # Requer autenticação
       responses:
-        '200':
+        "200":
           description: Informações do usuário autenticado retornadas com sucesso.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User' # Retorna o objeto User completo
-        '401':
+                $ref: "#/components/schemas/User" # Retorna o objeto User completo
+        "401":
           description: Não autenticado. Token JWT ausente ou inválido.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 message: "Token de autenticação ausente ou inválido."
                 code: "UNAUTHENTICATED"
-        '500':
+        "500":
           description: Erro interno do servidor.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-    
+                $ref: "#/components/schemas/ErrorResponse"
+
     patch:
       tags:
         - Users
@@ -2357,22 +2613,22 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UserUpdatePayload'
+              $ref: "#/components/schemas/UserUpdatePayload"
       responses:
-        '200':
+        "200":
           description: Perfil do usuário atualizado com sucesso.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User' # Retorna o objeto User completo e atualizado
-        '400':
+                $ref: "#/components/schemas/User" # Retorna o objeto User completo e atualizado
+        "400":
           description: |
             Erro de validação nos dados fornecidos.
             (ex: formato de email inválido se email fosse editável, CPF inválido, `preferred_modality_id` não existe).
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               examples:
                 validationError:
                   value:
@@ -2385,29 +2641,29 @@ paths:
                   value:
                     message: "O ID da modalidade fornecido não é válido."
                     code: "INVALID_MODALITY_ID"
-        '401':
+        "401":
           description: Não autenticado. Token JWT ausente ou inválido.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '409': # Conflict
+                $ref: "#/components/schemas/ErrorResponse"
+        "409": # Conflict
           description: Conflito de dados (ex apelido já existe e pertence a outro usuário).
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               examples:
                 nicknameInUse:
                   value:
                     message: "Apelido já cadastrado para outro usuário."
                     code: "NICKNAME_ALREADY_EXISTS"
-        '500':
+        "500":
           description: Erro interno do servidor.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/users/{userId}:
     get:
@@ -2430,33 +2686,33 @@ paths:
             format: int64
             example: 2
       responses:
-        '200':
+        "200":
           description: Informações públicas do usuário retornadas com sucesso.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PublicUser' # Retorna o objeto PublicUser
-        '401': # Se o endpoint for protegido
+                $ref: "#/components/schemas/PublicUser" # Retorna o objeto PublicUser
+        "401": # Se o endpoint for protegido
           description: Não autenticado. Token JWT ausente ou inválido.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
           description: Usuário não encontrado com o ID fornecido.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 message: "Usuário com ID '2' não encontrado."
                 code: "USER_NOT_FOUND"
-        '500':
+        "500":
           description: Erro interno do servidor.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/sports:
     get:
@@ -2481,7 +2737,7 @@ paths:
             type: integer
             default: 20
       responses:
-        '200':
+        "200":
           description: Lista de esportes retornada com sucesso.
           content:
             application/json:
@@ -2491,7 +2747,7 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Sport'
+                      $ref: "#/components/schemas/Sport"
                   page:
                     type: integer
                     example: 1
@@ -2501,12 +2757,12 @@ paths:
                   total:
                     type: integer
                     example: 4
-        '500':
+        "500":
           description: Erro interno do servidor.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/sports/{sportId}/modalities:
     get:
@@ -2538,7 +2794,7 @@ paths:
             type: integer
             default: 20
       responses:
-        '200':
+        "200":
           description: Lista de modalidades retornada com sucesso.
           content:
             application/json:
@@ -2548,7 +2804,7 @@ paths:
                   data:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Modality'
+                      $ref: "#/components/schemas/Modality"
                   page:
                     type: integer
                     example: 1
@@ -2558,12 +2814,12 @@ paths:
                   total:
                     type: integer
                     example: 3
-        '404':
+        "404":
           description: Esporte não encontrado.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               examples:
                 cpfInUse:
                   value:
@@ -2573,14 +2829,13 @@ paths:
                   value:
                     message: "Apelido já cadastrado para outro usuário."
                     code: "NICKNAME_ALREADY_EXISTS"
-        '500':
+        "500":
           description: Erro interno do servidor.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
-  
   /api/users/{userId}/club-member:
     get:
       tags:
@@ -2620,33 +2875,33 @@ paths:
             minimum: 1
             maximum: 100
       responses:
-        '200':
+        "200":
           description: Lista de clubes onde o usuário é membro retornada com sucesso.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedClubsResponse'
-        '401':
+                $ref: "#/components/schemas/PaginatedClubsResponse"
+        "401":
           description: Não autenticado. Token JWT ausente ou inválido.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
           description: Usuário com o `userId` especificado não encontrado.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 message: "Usuário com ID '123' não encontrado."
                 code: "USER_NOT_FOUND"
-        '500':
+        "500":
           description: Erro interno do servidor.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/users/{userId}/club-admin:
     get:
@@ -2687,37 +2942,36 @@ paths:
             minimum: 1
             maximum: 100
       responses:
-        '200':
+        "200":
           description: Lista de clubes onde o usuário é administrador retornada com sucesso.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedClubsResponse' # Reutiliza a mesma estrutura de resposta
-        '401':
+                $ref: "#/components/schemas/PaginatedClubsResponse" # Reutiliza a mesma estrutura de resposta
+        "401":
           description: Não autenticado. Token JWT ausente ou inválido.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 message: "Token de autenticação ausente ou inválido."
                 code: "UNAUTHENTICATED"
-        '404':
+        "404":
           description: Usuário com o `userId` especificado não encontrado.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 message: "Usuário com ID '123' não encontrado."
                 code: "USER_NOT_FOUND"
-        '500':
+        "500":
           description: Erro interno do servidor.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/users/me/wallet:
     get:
@@ -2734,36 +2988,36 @@ paths:
       security:
         - bearerAuth: [] # Requer autenticação
       responses:
-        '200':
+        "200":
           description: Resumo da carteira retornado com sucesso.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserWalletResponse'
-        '401':
+                $ref: "#/components/schemas/UserWalletResponse"
+        "401":
           description: Não autenticado. Token JWT ausente ou inválido.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 message: "Token de autenticação ausente ou inválido."
                 code: "UNAUTHENTICATED"
-        '404':
+        "404":
           description: Carteira não encontrada para o usuário (cenário improvável se a carteira é criada junto com o usuário).
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 message: "Carteira não encontrada."
                 code: "WALLET_NOT_FOUND"
-        '500':
+        "500":
           description: Erro interno do servidor.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/users/me/wallet/deposits:
     post:
@@ -2787,7 +3041,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/WalletDepositRequest'
+              $ref: "#/components/schemas/WalletDepositRequest"
             examples:
               pixOpenFinanceDeposit:
                 summary: Depósito com PIX Open Finance
@@ -2807,12 +3061,12 @@ paths:
                     card_token: "tok_xxxxxxxxxxxxxxxxx"
                     # installments: 1 # Opcional no request, backend pode assumir 1
       responses:
-        '201': # Created
+        "201": # Created
           description: Solicitação de depósito criada com sucesso e instruções/resultado retornados.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WalletDepositResponse'
+                $ref: "#/components/schemas/WalletDepositResponse"
               examples:
                 pixResponse:
                   summary: Resposta para PIX Open Finance
@@ -2833,30 +3087,30 @@ paths:
                       status: "approved"
                       total: 10000
                       payment_method_type: "credit_card"
-        '400':
+        "400":
           description: Erro de validação nos dados da requisição (ex valor inválido, método de depósito não suportado, dados do cartão/pix ausentes ou inválidos).
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
           description: Não autenticado.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '422': # Unprocessable Entity
+                $ref: "#/components/schemas/ErrorResponse"
+        "422": # Unprocessable Entity
           description: Não foi possível processar a solicitação de depósito (ex falha na comunicação com o SPE/gateway de pagamento, cartão recusado pelo emissor).
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
           description: Erro interno do servidor.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/users/me/wallet/withdrawals:
     post:
@@ -2882,20 +3136,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/WalletWithdrawalRequest'
+              $ref: "#/components/schemas/WalletWithdrawalRequest"
             example:
               amount: 50.00
               currency: "BRL"
               destination_account_id: 12
               description: "Saque para despesas"
       responses:
-        '202': # Accepted (A solicitação foi aceita para processamento, mas não concluída)
+        "202": # Accepted (A solicitação foi aceita para processamento, mas não concluída)
           description: Solicitação de saque recebida e aceita para processamento.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/WalletWithdrawalResponse'
-        '400':
+                $ref: "#/components/schemas/WalletWithdrawalResponse"
+        "400":
           description: |
             Erro de validação nos dados da requisição.
             Exemplos:
@@ -2905,7 +3159,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               examples:
                 insufficientFunds:
                   value:
@@ -2915,34 +3169,34 @@ paths:
                   value:
                     message: "A conta de destino especificada é inválida ou não permitida para este tipo de saque."
                     code: "INVALID_DESTINATION_ACCOUNT"
-        '401':
+        "401":
           description: Não autenticado. Token JWT ausente ou inválido.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
           description: Acesso negado. Saque não permitido para este tipo de conta de usuário (ex 'visitante').
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '422': # Unprocessable Entity
+                $ref: "#/components/schemas/ErrorResponse"
+        "422": # Unprocessable Entity
           description: Não foi possível processar a solicitação de saque no momento (ex falha na comunicação com o sistema de pagamentos externo).
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 message: "Falha ao iniciar a transferência de saque. Tente novamente mais tarde."
                 code: "PAYMENT_SYSTEM_ERROR"
-        '500':
+        "500":
           description: Erro interno do servidor.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  
+                $ref: "#/components/schemas/ErrorResponse"
+
   /api/users/me/transactions:
     get:
       tags:
@@ -3004,34 +3258,43 @@ paths:
           required: false
           schema:
             type: string
-            enum: [pendente, processando, rejeitado, concluida, cancelado, expirado, reembolsada]
+            enum:
+              [
+                pendente,
+                processando,
+                rejeitado,
+                concluida,
+                cancelado,
+                expirado,
+                reembolsada,
+              ]
             example: "concluida"
       responses:
-        '200':
+        "200":
           description: Lista de transações retornada com sucesso.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedUserTransactionsResponse'
-        '400':
+                $ref: "#/components/schemas/PaginatedUserTransactionsResponse"
+        "400":
           description: Erro nos parâmetros de filtro.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
           description: Não autenticado.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
           description: Erro interno do servidor.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  
+                $ref: "#/components/schemas/ErrorResponse"
+
   /api/clubs:
     post:
       tags:
@@ -3069,12 +3332,12 @@ paths:
               club_image:
                 contentType: image/png, image/jpeg # Tipos de mídia aceitos para a imagem
       responses:
-        '201': # Created
+        "201": # Created
           description: Clube criado com sucesso. Retorna o objeto do clube.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Club' # Retorna o objeto Club completo
+                $ref: "#/components/schemas/Club" # Retorna o objeto Club completo
           headers:
             Location: # Header padrão para POST bem-sucedido
               description: URL do recurso do clube recém-criado.
@@ -3082,7 +3345,7 @@ paths:
                 type: string
                 format: url
                 example: "/api/clubs/123"
-        '400':
+        "400":
           description: |
             Requisição inválida.
             Possíveis causas:
@@ -3093,7 +3356,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               examples:
                 missingName:
                   value:
@@ -3103,13 +3366,13 @@ paths:
                   value:
                     message: "Tipo de arquivo de imagem não suportado. Use JPEG ou PNG."
                     code: "INVALID_IMAGE_TYPE"
-        '401':
+        "401":
           description: Não autenticado. Token JWT ausente ou inválido.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
           description: |
             Acesso negado.
             Possíveis causas:
@@ -3118,7 +3381,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               examples:
                 notFullAccount:
                   value:
@@ -3128,34 +3391,34 @@ paths:
                   value:
                     message: "Usuário já é administrador do número máximo de clubes permitido (1)."
                     code: "CLUB_ADMIN_LIMIT_REACHED"
-        '409': # Conflict
+        "409": # Conflict
           description: Conflito de dados. Nome do clube já existe.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 clubNameInUse:
                   value:
                     message: "O nome de clube 'Guerreiros da Madrugada FC' já está em uso."
                     code: "CLUB_NAME_ALREADY_EXISTS"
-        '413': # Payload Too Large
+        "413": # Payload Too Large
           description: O arquivo de imagem enviado é muito grande.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 imageTooLarge:
                   value:
                     message: "O arquivo de imagem excede o tamanho máximo permitido de 100MB."
                     code: "PAYLOAD_TOO_LARGE"
-        '500':
+        "500":
           description: Erro interno do servidor (ex falha ao redimensionar imagem, falha ao salvar no blob storage).
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/clubs/{clubId}:
     get:
@@ -3180,33 +3443,33 @@ paths:
             format: int64
             example: 123
       responses:
-        '200':
+        "200":
           description: Detalhes do clube retornados com sucesso.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Club'
-        '401':
+                $ref: "#/components/schemas/Club"
+        "401":
           description: Não autenticado. Token JWT ausente ou inválido.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
           description: Clube não encontrado com o ID fornecido.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 message: "Clube com ID '123' não encontrado."
                 code: "CLUB_NOT_FOUND"
-        '500':
+        "500":
           description: Erro interno do servidor.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
     patch:
       tags:
         - Clubs
@@ -3231,18 +3494,18 @@ paths:
         content:
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/ClubUpdatePayload' # Referencia o schema definido acima
+              $ref: "#/components/schemas/ClubUpdatePayload" # Referencia o schema definido acima
             encoding:
               club_image:
                 contentType: image/png, image/jpeg
       responses:
-        '200':
+        "200":
           description: Clube atualizado com sucesso. Retorna o objeto do clube atualizado.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Club'
-        '400':
+                $ref: "#/components/schemas/Club"
+        "400":
           description: |
             Requisição inválida.
             Possíveis causas:
@@ -3252,48 +3515,48 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
           description: Não autenticado.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
           description: Acesso negado. Usuário não é administrador deste clube.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
           description: Clube não encontrado com o ID fornecido.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '409': # Conflict
+                $ref: "#/components/schemas/ErrorResponse"
+        "409": # Conflict
           description: Conflito de dados. Nome do clube fornecido já está em uso por outro clube.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 clubNameInUse:
                   value:
                     message: "O nome de clube 'Os Invencíveis FC' já está em uso."
                     code: "CLUB_NAME_ALREADY_EXISTS"
-        '413': # Payload Too Large
+        "413": # Payload Too Large
           description: O arquivo de imagem enviado (se houver) é muito grande.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
           description: Erro interno do servidor (ex falha ao processar imagem, erro no banco de dados).
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
     delete:
       tags:
         - Clubs
@@ -3317,38 +3580,38 @@ paths:
             format: int64
             example: 123
       responses:
-        '204': # No Content
+        "204": # No Content
           description: Clube marcado como excluído com sucesso. Nenhum conteúdo é retornado.
-        '401':
+        "401":
           description: Não autenticado. Token JWT ausente ou inválido.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
           description: Acesso negado. Usuário não é administrador deste clube.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 message: "Apenas administradores do clube podem excluí-lo."
                 code: "FORBIDDEN_CLUB_DELETION"
-        '404':
+        "404":
           description: Clube não encontrado com o ID fornecido (ou já marcado como excluído e não visível para esta operação).
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 message: "Clube com ID '123' não encontrado."
                 code: "CLUB_NOT_FOUND"
-        '500':
+        "500":
           description: Erro interno do servidor.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/clubs/{clubId}/members:
     get:
@@ -3409,46 +3672,54 @@ paths:
           required: false
           schema:
             type: string
-            enum: ["name_asc", "name_desc", "joined_at_asc", "joined_at_desc", "role_asc", "role_desc"]
+            enum:
+              [
+                "name_asc",
+                "name_desc",
+                "joined_at_asc",
+                "joined_at_desc",
+                "role_asc",
+                "role_desc",
+              ]
             default: "name_asc" # Exemplo de default
             example: "joined_at_desc"
       responses:
-        '200':
+        "200":
           description: Lista de membros retornada com sucesso.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedClubMembersResponse'
-        '400':
+                $ref: "#/components/schemas/PaginatedClubMembersResponse"
+        "400":
           description: Erro nos parâmetros de query (ex valor de `role` inválido).
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 message: "Valor inválido para o parâmetro 'role'."
                 code: "INVALID_QUERY_PARAMETER"
-        '401':
+        "401":
           description: Não autenticado. Token JWT ausente ou inválido.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
           description: Clube não encontrado com o ID fornecido ou clube está marcado como excluído.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 message: "Clube com ID '123' não encontrado ou foi excluído."
                 code: "CLUB_NOT_FOUND"
-        '500':
+        "500":
           description: Erro interno do servidor.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
     post:
       tags:
         - Clubs
@@ -3478,24 +3749,24 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AddClubMemberRequest'
+              $ref: "#/components/schemas/AddClubMemberRequest"
             example:
               userId: 789
               role: "membro"
       responses:
-        '201': # Created
+        "201": # Created
           description: Membro adicionado ao clube com sucesso. Retorna os detalhes do membro no clube.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClubMemberListItem' # Retorna o objeto do novo membro no clube
+                $ref: "#/components/schemas/ClubMemberListItem" # Retorna o objeto do novo membro no clube
           headers:
             Location:
               description: URL do recurso do membro do clube recém-criado (ex /api/clubs/{clubId}/members/{userId}).
               schema:
                 type: string
                 format: url
-        '400':
+        "400":
           description: |
             Requisição inválida.
             Possíveis causas:
@@ -3505,7 +3776,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               examples:
                 userNotFoundToAdd:
                   value:
@@ -3515,13 +3786,13 @@ paths:
                   value:
                     message: "Valor de 'role' inválido. Permitido: 'admin', 'membro'."
                     code: "INVALID_MEMBER_ROLE"
-        '401':
+        "401":
           description: Não autenticado.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
           description: |
             Acesso negado ou ação não permitida.
             Possíveis causas:
@@ -3531,7 +3802,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               examples:
                 notClubAdmin:
                   value:
@@ -3545,30 +3816,30 @@ paths:
                   value:
                     message: "O usuário especificado está banido deste clube e não pode ser adicionado."
                     code: "USER_BANNED_CANNOT_BE_ADDED"
-        '404':
+        "404":
           description: Clube (`clubId`) não encontrado ou foi excluído.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '409': # Conflict
+                $ref: "#/components/schemas/ErrorResponse"
+        "409": # Conflict
           description: Conflito. O usuário especificado já é membro (ativo) deste clube.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 alreadyMember:
                   value:
                     message: "Usuário com ID '789' já é membro deste clube."
                     code: "USER_ALREADY_CLUB_MEMBER"
-        '500':
+        "500":
           description: Erro interno do servidor.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  
+                $ref: "#/components/schemas/ErrorResponse"
+
   /api/clubs/{clubId}/members/{userId}: # Path atualizado para o recurso membro
     patch:
       tags:
@@ -3606,17 +3877,17 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ClubMemberUpdateRequest'
+              $ref: "#/components/schemas/ClubMemberUpdateRequest"
             example:
               role: "admin"
       responses:
-        '200':
+        "200":
           description: Cargo/status do membro atualizado com sucesso. Retorna os detalhes atualizados do membro no clube.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClubMemberListItem' # Retorna o estado atualizado do membro
-        '400':
+                $ref: "#/components/schemas/ClubMemberListItem" # Retorna o estado atualizado do membro
+        "400":
           description: |
             Requisição inválida.
             Possíveis causas:
@@ -3625,7 +3896,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               examples:
                 invalidRole:
                   value:
@@ -3635,13 +3906,13 @@ paths:
                   value:
                     message: "Não é possível rebaixar o último administrador do clube."
                     code: "LAST_ADMIN_CANNOT_BE_DOWNGRADED"
-        '401':
+        "401":
           description: Não autenticado.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
           description: |
             Acesso negado.
             Possíveis causas:
@@ -3650,7 +3921,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               examples:
                 notClubAdmin:
                   value:
@@ -3660,12 +3931,12 @@ paths:
                   value:
                     message: "Um administrador não pode banir a si mesmo."
                     code: "ADMIN_CANNOT_BAN_SELF"
-        '404':
+        "404":
           description: Clube (`clubId`) ou Membro (`userId`) não encontrado, ou usuário não é membro do clube especificado.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               examples:
                 clubNotFound:
                   value:
@@ -3675,14 +3946,13 @@ paths:
                   value:
                     message: "Membro com ID '456' não encontrado neste clube."
                     code: "CLUB_MEMBER_NOT_FOUND"
-        '500':
+        "500":
           description: Erro interno do servidor.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
-  
   /api/clubs/{clubId}/join:
     post:
       tags:
@@ -3710,25 +3980,25 @@ paths:
             format: int64
             example: 123
       responses:
-        '201': # Created
+        "201": # Created
           description: Solicitação de entrada enviada com sucesso e aguardando aprovação.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ClubJoinRequestStatus'
-        '400':
+                $ref: "#/components/schemas/ClubJoinRequestStatus"
+        "400":
           description: Requisição inválida.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
           description: Não autenticado.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
           description: |
             Ação não permitida.
             Possíveis causas:
@@ -3737,7 +4007,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               examples:
                 userBanned: # Renomeado para clareza
                   value:
@@ -3747,18 +4017,18 @@ paths:
                   value:
                     message: "Este clube atingiu o limite máximo de membros e não pode aceitar novas solicitações no momento."
                     code: "CLUB_MAX_MEMBERS_REACHED"
-        '404':
+        "404":
           description: Clube não encontrado ou foi excluído.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '409': # Conflict
+                $ref: "#/components/schemas/ErrorResponse"
+        "409": # Conflict
           description: Conflito. O usuário já é membro ou já possui uma solicitação pendente para este clube.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               examples:
                 alreadyMember:
                   value:
@@ -3768,13 +4038,13 @@ paths:
                   value:
                     message: "Você já possui uma solicitação pendente para este clube."
                     code: "PENDING_JOIN_REQUEST_EXISTS"
-        '500':
+        "500":
           description: Erro interno do servidor.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-                
+                $ref: "#/components/schemas/ErrorResponse"
+
   /api/clubs/{clubId}/leave:
     post:
       tags:
@@ -3803,18 +4073,18 @@ paths:
             format: int64
             example: 123
       responses:
-        '204':
+        "204":
           description: Saída do clube registrada com sucesso. Nenhum conteúdo é retornado.
-        '401':
+        "401":
           description: Não autenticado. Token JWT ausente ou inválido.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 message: "Token de autenticação ausente ou inválido."
                 code: "UNAUTHENTICATED"
-        '403':
+        "403":
           description: |
             Ação não permitida.
             Possíveis causas:
@@ -3823,7 +4093,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               examples:
                 notMember:
                   value:
@@ -3833,21 +4103,21 @@ paths:
                   value:
                     message: "Como último administrador, você não pode sair do clube. Nomeie outro administrador ou exclua o clube."
                     code: "LAST_ADMIN_CANNOT_LEAVE"
-        '404':
+        "404":
           description: Clube não encontrado com o ID fornecido ou o clube foi excluído.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 message: "Clube com ID '123' não encontrado."
                 code: "CLUB_NOT_FOUND"
-        '500':
+        "500":
           description: Erro interno do servidor.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/clubs/{clubId}/join-requests/{requestId}/approve:
     post:
@@ -3908,9 +4178,9 @@ paths:
             format: int64
             example: 789
       responses:
-        '204':
+        "204":
           description: Solicitação de entrada aprovada com sucesso. Usuário agora é membro do clube.
-        '400':
+        "400":
           description: |
             Requisição inválida.
             Possíveis causas:
@@ -3919,19 +4189,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               examples:
                 requestNotPending:
                   value:
                     message: "A solicitação de entrada não está pendente e não pode ser aprovada."
                     code: "REQUEST_NOT_PENDING"
-        '401':
+        "401":
           description: Não autenticado. Token JWT ausente ou inválido.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
           description: |
             Acesso negado ou ação não permitida.
             Possíveis causas:
@@ -3941,7 +4211,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               examples:
                 notClubAdmin:
                   value:
@@ -3951,7 +4221,7 @@ paths:
                   value:
                     message: "O usuário solicitante está banido deste clube e não pode ser aprovado."
                     code: "USER_BANNED_CANNOT_JOIN"
-        '404':
+        "404":
           description: |
             Recurso não encontrado.
             Possíveis causas:
@@ -3960,7 +4230,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               examples:
                 clubNotFound:
                   value:
@@ -3970,7 +4240,7 @@ paths:
                   value:
                     message: "Solicitação de entrada com ID '789' não encontrada."
                     code: "JOIN_REQUEST_NOT_FOUND"
-        '409': # Conflict
+        "409": # Conflict
           description: |
             Conflito ao tentar aprovar a solicitação.
             Possíveis causas:
@@ -3979,7 +4249,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               examples:
                 clubIsFull:
                   value:
@@ -3989,12 +4259,12 @@ paths:
                   value:
                     message: "O usuário solicitante já é membro deste clube."
                     code: "USER_ALREADY_CLUB_MEMBER"
-        '500':
+        "500":
           description: Erro interno do servidor.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/clubs/{clubId}/join-requests/{requestId}/reject:
     post:
@@ -4046,9 +4316,9 @@ paths:
             example: 789
       # Não há requestBody, pois o motivo foi removido.
       responses:
-        '204':
+        "204":
           description: Solicitação de entrada rejeitada com sucesso.
-        '400':
+        "400":
           description: |
             Requisição inválida.
             Possíveis causas:
@@ -4057,30 +4327,30 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               examples:
                 requestNotPending:
                   value:
                     message: "A solicitação de entrada não está pendente e não pode ser rejeitada."
                     code: "REQUEST_NOT_PENDING"
-        '401':
+        "401":
           description: Não autenticado. Token JWT ausente ou inválido.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
           description: Acesso negado. Usuário autenticado não é administrador deste clube.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 notClubAdmin:
                   value:
                     message: "Apenas administradores do clube podem rejeitar solicitações de entrada."
                     code: "NOT_CLUB_ADMIN"
-        '404':
+        "404":
           description: |
             Recurso não encontrado.
             Possíveis causas:
@@ -4089,7 +4359,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               examples:
                 clubNotFound:
                   value:
@@ -4099,26 +4369,26 @@ paths:
                   value:
                     message: "Solicitação de entrada com ID '789' não encontrada."
                     code: "JOIN_REQUEST_NOT_FOUND"
-        '409': # Conflict
+        "409": # Conflict
           description: |
             Conflito ao tentar rejeitar a solicitação.
             Isso pode ocorrer se a solicitação já foi processada (aprovada ou rejeitada) em outra requisição.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 requestAlreadyProcessed:
                   value:
                     message: "Esta solicitação de entrada já foi processada."
                     code: "REQUEST_ALREADY_PROCESSED"
-        '500':
+        "500":
           description: Erro interno do servidor.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  
+                $ref: "#/components/schemas/ErrorResponse"
+
   /api/arenas/{establishmentId}: # Renomeado o path parameter para clareza
     get:
       tags:
@@ -4156,42 +4426,42 @@ paths:
             format: int64
             example: 1
       responses:
-        '200':
+        "200":
           description: Detalhes do estabelecimento e seus locais retornados com sucesso.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/EstablishmentDetailsResponse'
-        '401':
+                $ref: "#/components/schemas/EstablishmentDetailsResponse"
+        "401":
           description: Não autenticado. Token JWT ausente ou inválido.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
           description: Acesso negado. O usuário autenticado não é administrador do estabelecimento solicitado.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 message: "Usuário não autorizado a acessar detalhes deste estabelecimento."
                 code: "FORBIDDEN_ESTABLISHMENT_ACCESS"
-        '404':
+        "404":
           description: Estabelecimento não encontrado com o ID fornecido.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 message: "Estabelecimento com ID '1' não encontrado."
                 code: "ESTABLISHMENT_NOT_FOUND"
-        '500':
+        "500":
           description: Erro interno do servidor.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/arenas/{localId}/available-hours:
     get:
@@ -4267,37 +4537,37 @@ paths:
             enum: [15, 30, 45, 60, 90, 120] # Exemplo de valores permitidos
             example: 30
       responses:
-        '200':
+        "200":
           description: Disponibilidade de horários retornada com sucesso.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ArenaAvailableHoursResponse'
-        '400':
+                $ref: "#/components/schemas/ArenaAvailableHoursResponse"
+        "400":
           description: Parâmetros de requisição inválidos (ex data em formato incorreto, intervalo inválido).
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
           description: Não autenticado.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
           description: Local (`localId`) não encontrado.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
           description: Erro interno do servidor.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  
+                $ref: "#/components/schemas/ErrorResponse"
+
   /api/search/available-courts:
     get:
       tags:
@@ -4354,7 +4624,7 @@ paths:
           description: Horário de início desejado (HH:MM, formato 24h).
           schema:
             type: string
-            pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
+            pattern: "^([01]?[0-9]|2[0-3]):[0-5][0-9]$"
             example: "19:30"
         - name: duration
           in: query
@@ -4395,30 +4665,30 @@ paths:
             minimum: 1
             maximum: 50 # Limite máximo para evitar sobrecarga
       responses:
-        '200':
+        "200":
           description: Lista de quadras disponíveis retornada com sucesso.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedAvailableCourtsResponse'
-        '400':
+                $ref: "#/components/schemas/PaginatedAvailableCourtsResponse"
+        "400":
           description: Parâmetros de requisição inválidos.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
           description: Não autenticado.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
           description: Erro interno do servidor.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/rents:
     get:
@@ -4495,30 +4765,30 @@ paths:
             enum: [organizer, participant] # Se omitido, retorna ambos os papéis
             example: "organizer"
       responses:
-        '200':
+        "200":
           description: Lista de reservas/aluguéis do usuário retornada com sucesso.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedUserRentsResponse'
-        '400':
+                $ref: "#/components/schemas/PaginatedUserRentsResponse"
+        "400":
           description: Parâmetros de requisição inválidos (ex status inválido, formato de filtro incorreto).
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
           description: Não autenticado.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
           description: Erro interno do servidor.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/rents/{reservationId}:
     get:
@@ -4582,30 +4852,30 @@ paths:
             format: uuid
             example: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
       responses:
-        '200':
+        "200":
           description: Detalhes da lista de aluguel/reserva retornados com sucesso.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ReservationDetailResponse'
-        '401':
+                $ref: "#/components/schemas/ReservationDetailResponse"
+        "401":
           description: Não autenticado.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
           description: Lista de aluguel/reserva não encontrada com o ID fornecido.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
           description: Erro interno do servidor.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/rents/{reservationId}/refund:
     post:
@@ -4678,25 +4948,25 @@ paths:
             format: uuid
             example: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
       responses:
-        '200':
+        "200":
           description: Reembolso processado com sucesso.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RefundProcessedResponse'
-        '400':
+                $ref: "#/components/schemas/RefundProcessedResponse"
+        "400":
           description: Requisição inválida (ex `reservationId` em formato inválido).
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
           description: Não autenticado. Token JWT ausente ou inválido.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
           description: |
             Ação não permitida.
             Possíveis causas:
@@ -4707,7 +4977,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               examples:
                 refundNotAllowedStatus:
                   value:
@@ -4721,12 +4991,12 @@ paths:
                   value:
                     message: "Usuário não possui pagamento confirmado para esta reserva para ser reembolsado."
                     code: "USER_PAYMENT_NOT_CONFIRMED"
-        '404':
+        "404":
           description: Reserva (`reservationId`) não encontrada, ou o usuário autenticado não está associado a esta reserva como participante.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               examples:
                 reservationNotFound:
                   value:
@@ -4736,25 +5006,25 @@ paths:
                   value:
                     message: "Usuário não encontrado como participante nesta reserva."
                     code: "USER_NOT_IN_RESERVATION"
-        '422': # Unprocessable Entity
+        "422": # Unprocessable Entity
           description: |
             Não foi possível processar o reembolso devido a um erro interno ou regra de negócio específica não atendida que impede a conclusão.
             (Ex: falha ao creditar na carteira após outras etapas, inconsistência de dados detectada).
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 walletCreditFailed:
                   value:
                     message: "Falha ao creditar o valor na carteira. A operação de reembolso foi revertida."
                     code: "WALLET_CREDIT_FAILED"
-        '500':
+        "500":
           description: Erro interno do servidor.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/rents/{reservationId}/qr-code-payload: # Path ajustado para refletir o conteúdo da resposta
     get:
@@ -4792,25 +5062,25 @@ paths:
             format: uuid
             example: "c7a8b9d0-e1f2-3456-7890-abcdef123456"
       responses:
-        '200':
+        "200":
           description: Payload do QR Code (token de check-in e dados contextuais) retornado com sucesso.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CheckInTokenResponse'
-        '400':
+                $ref: "#/components/schemas/CheckInTokenResponse"
+        "400":
           description: Requisição inválida (ex `reservationId` em formato inválido).
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
           description: Não autenticado. Token JWT ausente ou inválido.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
           description: |
             Acesso negado ou ação não permitida.
             Possíveis causas:
@@ -4820,7 +5090,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               examples:
                 reservationNotReserved:
                   value:
@@ -4834,7 +5104,7 @@ paths:
                   value:
                     message: "Não é possível obter o payload do QR Code para uma reserva que já terminou."
                     code: "RESERVATION_PERIOD_ENDED"
-        '404':
+        "404":
           description: |
             Recurso não encontrado.
             Possíveis causas:
@@ -4843,7 +5113,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               examples:
                 reservationNotFound:
                   value:
@@ -4853,13 +5123,13 @@ paths:
                   value:
                     message: "Token de check-in não encontrado para este usuário e reserva."
                     code: "CHECK_IN_TOKEN_NOT_FOUND"
-        '500':
+        "500":
           description: Erro interno do servidor.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  
+                $ref: "#/components/schemas/ErrorResponse"
+
   /api/rents/{reservationId}/payers:
     get:
       tags:
@@ -4903,49 +5173,49 @@ paths:
             minimum: 1
             maximum: 50
       responses:
-        '200':
+        "200":
           description: Lista de pagantes retornada com sucesso.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedReservationPayersResponse'
-        '400':
+                $ref: "#/components/schemas/PaginatedReservationPayersResponse"
+        "400":
           description: Requisição inválida (ex `reservationId` em formato inválido, parâmetros de paginação inválidos).
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
           description: Não autenticado. Token JWT ausente ou inválido.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
           description: |
             Acesso negado. O usuário autenticado não é participante da reserva especificada.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 message: "Usuário não autorizado a visualizar os pagantes desta reserva."
                 code: "FORBIDDEN_VIEW_PAYERS"
-        '404':
+        "404":
           description: Reserva (`reservationId`) não encontrada.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 message: "Reserva com ID 'xyz' não encontrada."
                 code: "RESERVATION_NOT_FOUND"
-        '500':
+        "500":
           description: Erro interno do servidor.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
 
   /api/rents/lists:
     post:
@@ -4979,19 +5249,19 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ArenaReservationListCreationRequest'
+              $ref: "#/components/schemas/ArenaReservationListCreationRequest"
             example:
               quadra_id: 401
               start_datetime_utc: "2024-12-01T19:00:00Z"
               duration_minutes: 60
               min_pagantes: 8
       responses:
-        '201':
+        "201":
           description: Lista de reserva criada com sucesso. Retorna um resumo da lista criada.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ArenaReservationListSummary'
+                $ref: "#/components/schemas/ArenaReservationListSummary"
           headers:
             Location:
               description: URL do recurso da reserva recém-criada.
@@ -4999,7 +5269,7 @@ paths:
                 type: string
                 format: url
                 example: "/api/rents/1a1a1a1a-1111-1111-1111-111111111111"
-        '400':
+        "400":
           description: |
             Requisição inválida.
             Possíveis causas:
@@ -5010,40 +5280,142 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
           description: Não autenticado. Token JWT ausente ou inválido.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
           description: |
             Acesso negado. O usuário autenticado não é administrador do local/estabelecimento da quadra.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
           description: Quadra (`quadra_id`) não encontrada.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '409': # Conflict
+                $ref: "#/components/schemas/ErrorResponse"
+        "409": # Conflict
           description: |
             Conflito de horário. Já existe uma reserva confirmada (`RESERVADO` ou `ESPERANDO`)
             para a mesma quadra no horário solicitado.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
               example:
                 message: "Conflito de horário. Já existe uma reserva confirmada para esta quadra e horário."
                 code: "RESERVATION_SLOT_CONFLICT"
-        '500':
+        "500":
           description: Erro interno do servidor.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/payments/orders:
+    post:
+      tags:
+        - Payments
+      summary: Cria uma ordem de pagamento para um serviço precificado
+      description: |
+        Inicia o processo de pagamento para um 'service' (item pagável) existente, utilizando uma cotação de preço (`price_id`)
+        previamente obtida através do endpoint `GET /api/price`.
+        Este endpoint cria uma 'transaction' interna com status 'pendente' e interage com o gateway de pagamento
+        para obter as instruções de pagamento (ex: dados para PIX Open Finance, resultado de uma tentativa de cobrança de cartão),
+        que são retornadas ao cliente.
+
+        O `price_id` fornecido é validado quanto à existência, expiração, propriedade do usuário e se já foi utilizado.
+        Após a confirmação do pagamento (via webhook do gateway), outros processos no backend podem ser acionados
+        (ex: para reservas, registrar o usuário na lista de participantes).
+
+        **Este endpoint é para iniciar pagamentos externos, não utiliza o saldo da carteira do usuário.**
+      operationId: createPaymentOrderFromQuote
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: ID da cotação de preço e detalhes do método de pagamento escolhido.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePaymentOrderFromQuoteRequest"
+            examples:
+              payWithPixOpenFinance:
+                summary: Pagar com PIX Open Finance
+                value:
+                  price_id: "d2a7a8f5-b29c-4d4f-a8e3-b0d1c7a9b3e2"
+                  payment_method_details:
+                    method_type: "pix_open_finance"
+              payWithSavedCard:
+                summary: Pagar com Cartão de Crédito Salvo
+                value:
+                  price_id: "e5b8b9f2-c1a0-4e5d-9f7a-1c2d8b6e4f3a"
+                  payment_method_details:
+                    method_type: "credit_card"
+                    saved_card_id: 102
+      responses:
+        "201": # Created (ou 200 OK se a semântica for mais de "processado")
+          description: Ordem de pagamento criada e instruções de pagamento/resultado inicial da cobrança retornados.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentOrderInitiatedResponse"
+        "400":
+          description: |
+            Requisição inválida.
+            Possíveis causas:
+            - `price_id` ausente ou inválido.
+            - `price_id` expirado, já utilizado ou não pertence ao usuário.
+            - Detalhes do método de pagamento ausentes ou inválidos.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                invalidPriceId:
+                  value:
+                    message: "A cotação de preço fornecida (price_id) é inválida, expirada ou já foi utilizada."
+                    code: "INVALID_PRICE_ID"
+        "401":
+          description: Não autenticado. Token JWT ausente ou inválido.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Cotação de preço (`price_id`) não encontrada.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422": # Unprocessable Entity
+          description: |
+            Não foi possível processar a ordem de pagamento com o gateway.
+            Pode incluir falhas na comunicação com o gateway, recusa do gateway por alguma regra, etc.
+            A resposta do gateway pode estar nos detalhes do erro.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse" # Pode ter um corpo de erro mais específico do gateway
+              example:
+                gatewayError: # Exemplo genérico
+                  value:
+                    message: "Falha ao processar pagamento com o gateway: Cartão recusado."
+                    code: "GATEWAY_PROCESSING_ERROR"
+                    details:
+                      {
+                        "gateway_error_code": "CARD_DECLINED",
+                        "gateway_message": "...",
+                      }
+        "500":
+          description: Erro interno do servidor.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"

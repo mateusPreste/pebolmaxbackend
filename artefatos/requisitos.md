@@ -46,50 +46,48 @@ Data: 21/05/2025
 
     8. Suposições e Dependências
 
-1. Introdução
+1.  Introdução
 
     1.1. Propósito
     Este documento especifica os requisitos para a primeira versão (MVP - Minimum Viable Product) do sistema de reservas de ambientes esportivos, doravante chamado "PebolMAX". O sistema visa facilitar a organização de jogos e a reserva de quadras/arenas esportivas, conectando jogadores e estabelecimentos.
 
     1.2. Escopo do Produto
-    O PebolMAX consistirá em dois aplicativos móveis nativos (desenvolvidos em Flutter):
-        1. App do Jogador: Para jogadores encontrarem e participarem de listas de reserva, gerenciarem seus perfis, clubes e pagamentos.
-        2. App da Arena: Para funcionários de estabelecimentos esportivos gerenciarem a disponibilidade de suas quadras, criarem listas de reserva, acompanharem o status das reservas e gerarem relatórios.
-        O sistema incluirá funcionalidades de criação de listas, gerenciamento de pagantes, concessão de reservas baseada em quórum, um sistema de precificação dinâmica, carteira digital para jogadores e ferramentas de gestão para as arenas.
+    O PebolMAX consistirá em dois aplicativos móveis nativos (desenvolvidos em Flutter): 1. App do Jogador: Para jogadores encontrarem e participarem de listas de reserva, gerenciarem seus perfis, clubes e pagamentos. 2. App da Arena: Para funcionários de estabelecimentos esportivos gerenciarem a disponibilidade de suas quadras, criarem listas de reserva, acompanharem o status das reservas e gerarem relatórios.
+    O sistema incluirá funcionalidades de criação de listas, gerenciamento de pagantes, concessão de reservas baseada em quórum, um sistema de precificação dinâmica, carteira digital para jogadores e ferramentas de gestão para as arenas.
 
     1.3. Definições, Acrônimos e Abreviações
-        Arena/Estabelecimento: Local físico que oferece quadras/espaços esportivos para aluguel.
-        Lista (de Reserva): Uma tentativa de um grupo de jogadores (clube) de reservar um horário específico em uma quadra. Atingir um número mínimo de pagantes é necessário para garantir a prioridade na reserva.
-        Clube: Um grupo de jogadores, geralmente com um ou mais administradores.
-        Organizador (da Lista): O jogador responsável por iniciar/gerenciar uma lista específica.
-        Pagante: Jogador que efetuou o pagamento para participar de uma lista.
-        PIB: Preço Individual Base.
-        SDHQ: Score de Demanda do Horário/Quadra.
-        SU: Score do Usuário.
-        PIF: Preço Individual Final.
-        MVP: Minimum Viable Product (Produto Mínimo Viável).
-        JWT: JSON Web Token.
-        OAuth: Open Authorization.
-        API: Application Programming Interface.
-        UI: User Interface (Interface do Usuário).
-        UX: User Experience (Experiência do Usuário).
+    Arena/Estabelecimento: Local físico que oferece quadras/espaços esportivos para aluguel.
+    Lista (de Reserva): Uma tentativa de um grupo de jogadores (clube) de reservar um horário específico em uma quadra. Atingir um número mínimo de pagantes é necessário para garantir a prioridade na reserva.
+    Clube: Um grupo de jogadores, geralmente com um ou mais administradores.
+    Organizador (da Lista): O jogador responsável por iniciar/gerenciar uma lista específica.
+    Pagante: Jogador que efetuou o pagamento para participar de uma lista.
+    PIB: Preço Individual Base.
+    SDHQ: Score de Demanda do Horário/Quadra.
+    SU: Score do Usuário.
+    PIF: Preço Individual Final.
+    MVP: Minimum Viable Product (Produto Mínimo Viável).
+    JWT: JSON Web Token.
+    OAuth: Open Authorization.
+    API: Application Programming Interface.
+    UI: User Interface (Interface do Usuário).
+    UX: User Experience (Experiência do Usuário).
 
-2. Visão Geral do Sistema
+2.  Visão Geral do Sistema
 
     2.1. Perspectiva do Produto
     O PebolMAX é um novo produto independente que se integrará a serviços externos de pagamento e autenticação (Google OAuth). Ele fornecerá uma plataforma para facilitar a interação entre jogadores que buscam horários para praticar esportes e arenas que oferecem esses espaços.
 
     2.2. Funcionalidades Principais
-        Criação e gerenciamento de contas de usuário (Visitante, PIX, Full para jogadores; Funcionário para arenas).
-        Criação e gerenciamento de clubes por jogadores.
-        Criação, participação e gerenciamento de Listas de Reserva.
-        Sistema de estados para Listas (Vazia, Aberta, Em Disputa, Esperando, Reservado, Cancelada, Perdido, Concluído).
-        Processamento de pagamentos individuais para participação em listas.
-        Carteira digital no App do Jogador para saldo, depósitos e saques.
-        Precificação dinâmica baseada em demanda e score do usuário.
-        Check-in de jogadores via QR Code no App da Arena.
-        Geração de relatórios básicos para o App da Arena.
-        Notificações para eventos importantes.
+    Criação e gerenciamento de contas de usuário (Visitante, PIX, Full para jogadores; Funcionário para arenas).
+    Criação e gerenciamento de clubes por jogadores.
+    Criação, participação e gerenciamento de Listas de Reserva.
+    Sistema de estados para Listas (Vazia, Aberta, Em Disputa, Esperando, Reservado, Cancelada, Perdido, Concluído).
+    Processamento de pagamentos individuais para participação em listas.
+    Carteira digital no App do Jogador para saldo, depósitos e saques.
+    Precificação dinâmica baseada em demanda e score do usuário.
+    Check-in de jogadores via QR Code no App da Arena.
+    Geração de relatórios básicos para o App da Arena.
+    Notificações para eventos importantes.
 
     2.3. Atores e Perfis de Usuário (Detalhado)
 
@@ -167,444 +165,461 @@ Data: 21/05/2025
 
     2.3.2. Funcionário da Arena
     Indivíduo associado a um estabelecimento esportivo, que utiliza o "App da Arena" para gerenciar operações relacionadas a reservas.
-        Acesso: Obtido através de cadastro e login (Google OAuth ou Email/Senha) no App da Arena. A associação com um estabelecimento específico é gerenciada (no MVP, manualmente no backend após cadastro do funcionário).
-        Permissões:
-            Criar novas listas de reserva para as quadras do(s) seu(s) local(is) associado(s), especificando quadra, horário de início, duração e tamanho mínimo.
-            Copiar/compartilhar o link de listas criadas.
-            Visualizar o calendário de horários de todas as quadras do(s) seu(s) local(is), incluindo o status das listas e reservas.
-            Cancelar uma reserva confirmada (estado RESERVADO), informando um motivo, o que aciona o reembolso aos jogadores.
-            Escanear QR Codes de jogadores para realizar o check-in de acesso à quadra.
-            Visualizar relatórios de métricas (receitas, ticket médio, % ocupação, qtde agendamentos, faltas) para o(s) seu(s) local(is) associado(s), com drill-down por quadra.
-        Restrições:
-            Ações limitadas ao(s) estabelecimento(s)/local(is) aos quais está vinculado.
-            Não interage com o sistema de carteira digital ou perfis de jogador (além do necessário para check-in).
-            No MVP, não gerencia o cadastro de informações da arena (locais, quadras, preços base) diretamente pelo app (isso é feito via formulário externo).
-        Regras:
-            Para o MVP, assume-se um perfil de permissão único para todos os funcionários da arena. Não há diferentes níveis de acesso dentro do App da Arena.
+    Acesso: Obtido através de cadastro e login (Google OAuth ou Email/Senha) no App da Arena. A associação com um estabelecimento específico é gerenciada (no MVP, manualmente no backend após cadastro do funcionário).
+    Permissões:
+    Criar novas listas de reserva para as quadras do(s) seu(s) local(is) associado(s), especificando quadra, horário de início, duração e tamanho mínimo.
+    Copiar/compartilhar o link de listas criadas.
+    Visualizar o calendário de horários de todas as quadras do(s) seu(s) local(is), incluindo o status das listas e reservas.
+    Cancelar uma reserva confirmada (estado RESERVADO), informando um motivo, o que aciona o reembolso aos jogadores.
+    Escanear QR Codes de jogadores para realizar o check-in de acesso à quadra.
+    Visualizar relatórios de métricas (receitas, ticket médio, % ocupação, qtde agendamentos, faltas) para o(s) seu(s) local(is) associado(s), com drill-down por quadra.
+    Restrições:
+    Ações limitadas ao(s) estabelecimento(s)/local(is) aos quais está vinculado.
+    Não interage com o sistema de carteira digital ou perfis de jogador (além do necessário para check-in).
+    No MVP, não gerencia o cadastro de informações da arena (locais, quadras, preços base) diretamente pelo app (isso é feito via formulário externo).
+    Regras:
+    Para o MVP, assume-se um perfil de permissão único para todos os funcionários da arena. Não há diferentes níveis de acesso dentro do App da Arena.
 
     2.3.3. Clube (Entidade Gerenciada)
     Representa um grupo de jogadores. Não é um ator que "loga", mas uma entidade central para a organização de listas.
-        Criação: Por um jogador com Conta Full.
-        Administração:
-            Até 3 administradores por clube.
-            Um jogador pode ser administrador de no máximo 1 clube.
-        Participação:
-            Um jogador pode ser membro de até 5 clubes.
-        Associação:
-            Toda lista de reserva deve ser associada a um clube.
-        Informações: Nome, logo (opcional), lista de membros, lista de administradores.
+    Criação: Por um jogador com Conta Full.
+    Administração:
+    Até 3 administradores por clube.
+    Um jogador pode ser administrador de no máximo 1 clube.
+    Participação:
+    Um jogador pode ser membro de até 5 clubes.
+    Associação:
+    Toda lista de reserva deve ser associada a um clube.
+    Informações: Nome, logo (opcional), lista de membros, lista de administradores.
 
-3. Arquitetura de Alto Nível (Componentes Principais)
+3.  Arquitetura de Alto Nível (Componentes Principais)
     O sistema será composto por:
-        App do Jogador (Flutter)
-        App da Arena (Flutter)
-        Backend API (Servidor): Lógica de negócios, gerenciamento de dados.
-        Banco de Dados: Persistência dos dados do sistema.
-        Módulo de Integração com API de Pagamentos: Interação com provedor de pagamentos para PIX e Cartão.
-        Webhook Listener: Recebimento de callbacks da API de Pagamentos.
-        Blob Storage: Armazenamento de imagens (logos, fotos de perfil).
+    App do Jogador (Flutter)
+    App da Arena (Flutter)
+    Backend API (Servidor): Lógica de negócios, gerenciamento de dados.
+    Banco de Dados: Persistência dos dados do sistema.
+    Módulo de Integração com API de Pagamentos: Interação com provedor de pagamentos para PIX e Cartão.
+    Webhook Listener: Recebimento de callbacks da API de Pagamentos.
+    Blob Storage: Armazenamento de imagens (logos, fotos de perfil).
 
-4. Requisitos Funcionais
+4.  Requisitos Funcionais
 
     4.1. Gerenciamento de Contas e Perfis de Jogador (App do Jogador)
 
     RF-001: Registro de Usuário
-        O sistema deve permitir o registro de novos jogadores através de:
-            Email/senha com confirmação de email
-            Google OAuth
-        Durante o registro, o sistema deve coletar:
-            Nome completo
-            Modalidade esportiva favorita
-            Posição preferida
-            Pé preferido (destro/canhoto/ambidestro)
-            CPF (para verificação de unicidade)
-        O sistema deve criar automaticamente uma Conta Full para usuários que se registrem por estes métodos.
+    O sistema deve permitir o registro de novos jogadores através de:
+    Email/senha com confirmação de email
+    Google OAuth
+    Durante o registro, o sistema deve coletar:
+    Nome completo
+    Modalidade esportiva favorita
+    Posição preferida
+    Pé preferido (destro/canhoto/ambidestro)
+    CPF (para verificação de unicidade)
+    O sistema deve criar automaticamente uma Conta Full para usuários que se registrem por estes métodos.
 
     RF-002: Autenticação de Usuário
-        O sistema deve permitir login através de:
-            Email/senha
-            Google OAuth
-        O sistema deve manter sessões ativas através de JWT tokens.
-        O sistema deve permitir logout em qualquer momento.
+    O sistema deve permitir login através de:
+    Email/senha
+    Google OAuth
+    O sistema deve manter sessões ativas através de JWT tokens.
+    O sistema deve permitir logout em qualquer momento.
 
     RF-003: Cadastro Rápido via PIX
-        O sistema deve permitir cadastro rápido quando um visitante tentar efetuar pagamento.
-        O cadastro rápido deve coletar apenas:
-            CPF
-            Dados da conta bancária PIX utilizada no pagamento
-        O sistema deve criar uma Conta PIX com funcionalidades limitadas.
+    O sistema deve permitir cadastro rápido quando um visitante tentar efetuar pagamento.
+    O cadastro rápido deve coletar apenas:
+    CPF
+    Dados da conta bancária PIX utilizada no pagamento
+    O sistema deve criar uma Conta PIX com funcionalidades limitadas.
 
     RF-004: Evolução de Conta PIX para Full
-        O sistema deve permitir que usuários com Conta PIX evoluam para Conta Full.
-        A evolução deve manter todos os dados e histórico da Conta PIX.
-        O sistema deve associar um método de autenticação robusto (Google OAuth ou email/senha).
+    O sistema deve permitir que usuários com Conta PIX evoluam para Conta Full.
+    A evolução deve manter todos os dados e histórico da Conta PIX.
+    O sistema deve associar um método de autenticação robusto (Google OAuth ou email/senha).
 
     RF-005: Gerenciamento de Perfil
-        O sistema deve permitir visualização e edição de perfil próprio.
-        Campos editáveis: nome, foto, modalidade/posição favorita, pé preferido.
-        O sistema deve validar uploads de imagem (formato, tamanho).
+    O sistema deve permitir visualização e edição de perfil próprio.
+    Campos editáveis: nome, foto, modalidade/posição favorita, pé preferido.
+    O sistema deve validar uploads de imagem (formato, tamanho).
 
     RF-006: Visualização de Perfis de Outros Usuários
-        O sistema deve permitir visualização de perfis de outros jogadores para usuários com Conta PIX ou Full.
-        Informações visíveis: nome, foto, posição, pé preferido, clubes participantes, modalidades.
+    O sistema deve permitir visualização de perfis de outros jogadores para usuários com Conta PIX ou Full.
+    Informações visíveis: nome, foto, posição, pé preferido, clubes participantes, modalidades.
 
     RF-007: Criação Automática de Perfil por Modalidade
-        O sistema deve criar automaticamente um perfil em nova modalidade quando o jogador participar de reserva dessa modalidade pela primeira vez.
+    O sistema deve criar automaticamente um perfil em nova modalidade quando o jogador participar de reserva dessa modalidade pela primeira vez.
 
     RF-008: Acesso de Visitante
-        O sistema deve permitir acesso limitado sem cadastro.
-        Visitantes podem visualizar listas de forma limitada (sem detalhes de participantes).
+    O sistema deve permitir acesso limitado sem cadastro.
+    Visitantes podem visualizar listas de forma limitada (sem detalhes de participantes).
 
     4.2. Gerenciamento de Clubes
 
     RF-009: Criação de Clube
-        O sistema deve permitir que jogadores com Conta Full criem até 1 clube.
-        O criador torna-se automaticamente o primeiro administrador.
-        Dados obrigatórios: nome do clube.
-        Dados opcionais: logo do clube.
+    O sistema deve permitir que jogadores com Conta Full criem até 1 clube.
+    O criador torna-se automaticamente o primeiro administrador.
+    Dados obrigatórios: nome do clube.
+    Dados opcionais: logo do clube.
 
     RF-010: Administração de Clube
-        O sistema deve permitir até 3 administradores por clube.
-        Um jogador pode ser administrador de no máximo 1 clube.
-        Administradores podem:
-            Convidar novos membros
-            Promover membros a administradores
-            Remover membros
-            Editar informações do clube (nome, logo)
+    O sistema deve permitir até 3 administradores por clube.
+    Um jogador pode ser administrador de no máximo 1 clube.
+    Administradores podem:
+    Convidar novos membros
+    Promover membros a administradores
+    Remover membros
+    Editar informações do clube (nome, logo)
 
     RF-011: Participação em Clubes
-        O sistema deve permitir que jogadores participem de até 5 clubes.
-        O sistema deve gerenciar convites para clubes.
-        Jogadores podem aceitar/recusar convites.
+    O sistema deve permitir que jogadores participem de até 5 clubes.
+    O sistema deve gerenciar convites para clubes.
+    Jogadores podem aceitar/recusar convites.
 
     RF-012: Visualização de Informações de Clube
-        O sistema deve exibir informações detalhadas dos clubes:
-            Nome e logo
-            Lista de membros
-            Lista de administradores
-            Histórico de atividades (opcional para MVP)
+    O sistema deve exibir informações detalhadas dos clubes:
+    Nome e logo
+    Lista de membros
+    Lista de administradores
+    Histórico de atividades (opcional para MVP)
 
     4.3. Gerenciamento de Listas de Reserva
 
     RF-013: Acesso a Listas via Link
-        O sistema deve permitir acesso a listas através de links públicos.
-        Links devem ser válidos independente do estado de autenticação do usuário.
+    O sistema deve permitir acesso a listas através de links públicos.
+    Links devem ser válidos independente do estado de autenticação do usuário.
 
     RF-014: Organização de Lista Vazia
-        O sistema deve permitir que jogadores com Conta PIX ou Full se tornem organizadores de listas vazias.
-        O organizador deve associar um dos seus clubes à lista.
-        O primeiro pagante recebe 20% de desconto.
+    O sistema deve permitir que jogadores com Conta PIX ou Full se tornem organizadores de listas vazias.
+    O organizador deve associar um dos seus clubes à lista.
+    O primeiro pagante recebe 20% de desconto.
 
     RF-015: Compartilhamento de Lista
-        O sistema deve gerar links únicos para cada lista.
-        Participantes devem poder compartilhar links da lista.
+    O sistema deve gerar links únicos para cada lista.
+    Participantes devem poder compartilhar links da lista.
 
     RF-016: Entrada em Lista com Pagamento
-        O sistema deve permitir entrada em lista através de pagamento antecipado.
-        O sistema deve calcular preço individual dinamicamente (PIF).
-        O sistema deve processar pagamentos via métodos cadastrados.
+    O sistema deve permitir entrada em lista através de pagamento antecipado.
+    O sistema deve calcular preço individual dinamicamente (PIF).
+    O sistema deve processar pagamentos via métodos cadastrados.
 
     RF-017: Opção "Pagar Pessoalmente"
-        O sistema deve permitir indicação de "Pagar Pessoalmente".
-        Jogadores que optarem por esta modalidade:
-            Não contam para o quórum até efetuar pagamento
-            Não recebem desconto de pagamento antecipado
-            Podem converter para pagamento antecipado a qualquer momento
+    O sistema deve permitir indicação de "Pagar Pessoalmente".
+    Jogadores que optarem por esta modalidade:
+    Não contam para o quórum até efetuar pagamento
+    Não recebem desconto de pagamento antecipado
+    Podem converter para pagamento antecipado a qualquer momento
 
     RF-018: Visualização de Detalhes da Lista
-        O sistema deve exibir informações completas da lista:
-            Local e quadra
-            Horário e duração
-            Status atual
-            Número de pagantes vs mínimo necessário
-            Lista de participantes
-            Preço individual atual
+    O sistema deve exibir informações completas da lista:
+    Local e quadra
+    Horário e duração
+    Status atual
+    Número de pagantes vs mínimo necessário
+    Lista de participantes
+    Preço individual atual
 
     RF-019: Alteração de Lista pelo Organizador
-        O sistema deve permitir que organizadores alterem:
-            Horário
-            Duração
-            Tamanho mínimo
-        O sistema deve recalcular preços após alterações.
-        O sistema deve notificar participantes sobre mudanças.
+    O sistema deve permitir que organizadores alterem:
+    Horário
+    Duração
+    Tamanho mínimo
+    O sistema deve recalcular preços após alterações.
+    O sistema deve notificar participantes sobre mudanças.
 
     RF-020: Transferência de Organização
-        O sistema deve permitir transferência do cargo de organizador.
-        Apenas integrantes pagos da lista podem receber a organização.
+    O sistema deve permitir transferência do cargo de organizador.
+    Apenas integrantes pagos da lista podem receber a organização.
 
     RF-021: Gerenciamento de Lista Perdida
-        Para listas no estado PERDIDO, o organizador deve poder:
-            Definir novas preferências de horário
-            Selecionar nova opção entre as apresentadas pelo sistema
-            Desistir da lista (com reembolso para todos)
+    Para listas no estado PERDIDO, o organizador deve poder:
+    Definir novas preferências de horário
+    Selecionar nova opção entre as apresentadas pelo sistema
+    Desistir da lista (com reembolso para todos)
 
     RF-022: Solicitação de Reembolso
-        O sistema deve permitir reembolso para jogadores pagantes.
-        Condições para reembolso:
-            Mais de 24h antes da reserva
-            Lista cancelada pela arena
-            Alterações significativas pelo organizador
-        Reembolsos devem ser creditados na carteira in-app.
+    O sistema deve permitir reembolso para jogadores pagantes.
+    Condições para reembolso:
+    Mais de 24h antes da reserva
+    Lista cancelada pela arena
+    Alterações significativas pelo organizador
+    Reembolsos devem ser creditados na carteira in-app.
 
     RF-023: QR Code para Check-in
-        O sistema deve gerar QR codes únicos para check-in.
-        QR codes devem estar disponíveis apenas para listas no estado RESERVADO.
-        QR codes devem expirar após o término do horário da reserva.
+    O sistema deve gerar QR codes únicos para check-in.
+    QR codes devem estar disponíveis apenas para listas no estado RESERVADO.
+    QR codes devem expirar após o término do horário da reserva.
 
     4.4. Pagamentos e Carteira Digital
 
     RF-024: Gerenciamento de Métodos de Pagamento
-        O sistema deve permitir cadastro de métodos de pagamento para Contas Full:
-            Até 20 contas PIX
-            Cartões de crédito
-        Contas PIX devem manter apenas o método original cadastrado.
+    O sistema deve permitir cadastro de métodos de pagamento para Contas Full:
+    Até 20 contas PIX
+    Cartões de crédito
+    Contas PIX devem manter apenas o método original cadastrado.
 
     RF-025: Processamento de Pagamentos
-        O sistema deve processar pagamentos através dos métodos cadastrados.
-        O sistema deve integrar com APIs de pagamento (PIX Open Finance, Cartão).
-        O sistema deve confirmar pagamentos via webhook.
+    O sistema deve processar pagamentos através dos métodos cadastrados.
+    O sistema deve integrar com APIs de pagamento (PIX Open Finance, Cartão).
+    O sistema deve confirmar pagamentos via webhook.
 
     RF-026: Carteira Digital
-        O sistema deve manter carteira digital para cada jogador.
-        A carteira deve exibir:
-            Saldo atual
-            Extrato de transações
-            Histórico de depósitos e saques
+    O sistema deve manter carteira digital para cada jogador.
+    A carteira deve exibir:
+    Saldo atual
+    Extrato de transações
+    Histórico de depósitos e saques
 
     RF-027: Depósitos na Carteira
-        O sistema deve permitir depósitos via PIX ou cartão de crédito.
-        Valor mínimo para depósito: R$ 12,00.
-        Depósitos devem ser confirmados via webhook do provedor de pagamento.
+    O sistema deve permitir depósitos via PIX ou cartão de crédito.
+    Valor mínimo para depósito: R$ 12,00.
+    Depósitos devem ser confirmados via webhook do provedor de pagamento.
 
     RF-028: Saques da Carteira
-        O sistema deve permitir saques para contas bancárias associadas.
-        Taxa de saque: 2% do valor.
-        Saques devem ser processados em até 2 dias úteis.
+    O sistema deve permitir saques para contas bancárias associadas.
+    Taxa de saque: 2% do valor.
+    Saques devem ser processados em até 2 dias úteis.
 
     4.5. Visualização e Interação com o Ambiente
 
     RF-029: Informações do Local
-        O sistema deve exibir informações detalhadas do local:
-            Nome e logo
-            Endereço completo
-            Botão para abrir no Google Maps
+    O sistema deve exibir informações detalhadas do local:
+    Nome e logo
+    Endereço completo
+    Botão para abrir no Google Maps
 
     RF-030: Integração com Transporte
-        O sistema deve oferecer botão para chamar motorista (Uber).
-        O destino deve ser configurado para área de estacionamento da arena.
+    O sistema deve oferecer botão para chamar motorista (Uber).
+    O destino deve ser configurado para área de estacionamento da arena.
 
     4.6. Notificações
 
     RF-031: Sistema de Notificações
-        O sistema deve enviar notificações para eventos importantes:
-            Nova lista no clube do usuário
-            Mudança de horário/valor em lista participante
-            Reserva concedida
-            Lista perdida
-            Reembolso processado
-            Chargeback detectado
-            Cancelamento pela arena
+    O sistema deve enviar notificações para eventos importantes:
+    Nova lista no clube do usuário
+    Mudança de horário/valor em lista participante
+    Reserva concedida
+    Lista perdida
+    Reembolso processado
+    Chargeback detectado
+    Cancelamento pela arena
 
     4.7. Autenticação e Gerenciamento de Conta (Arena)
 
     RF-032: Registro e Login de Funcionário
-        O sistema deve permitir registro/login de funcionários da arena.
-        Métodos aceitos: email/senha ou Google OAuth.
-        Associação com estabelecimento deve ser gerenciada manualmente no MVP.
+    O sistema deve permitir registro/login de funcionários da arena.
+    Métodos aceitos: email/senha ou Google OAuth.
+    Associação com estabelecimento deve ser gerenciada manualmente no MVP.
 
     4.8. Gerenciamento de Listas e Reservas (Arena)
 
     RF-033: Criação de Lista pela Arena
-        O sistema deve permitir criação de novas listas pelo funcionário da arena.
-        Parâmetros obrigatórios:
-            Quadra
-            Horário de início
-            Duração da partida
-            Tamanho mínimo da lista
+    O sistema deve permitir criação de novas listas pelo funcionário da arena.
+    Parâmetros obrigatórios:
+    Quadra
+    Horário de início
+    Duração da partida
+    Tamanho mínimo da lista
 
     RF-034: Compartilhamento de Link
-        O sistema deve gerar link único após criação da lista.
-        Funcionário deve poder copiar/compartilhar o link.
+    O sistema deve gerar link único após criação da lista.
+    Funcionário deve poder copiar/compartilhar o link.
 
     RF-035: Visualização de Calendário
-        O sistema deve exibir calendário com todas as listas e reservas do local.
-        Visualização deve incluir status e horários.
-        Filtros por data e quadra devem estar disponíveis.
+    O sistema deve exibir calendário com todas as listas e reservas do local.
+    Visualização deve incluir status e horários.
+    Filtros por data e quadra devem estar disponíveis.
 
     RF-036: Cancelamento de Reserva
-        O sistema deve permitir cancelamento de reservas confirmadas.
-        Funcionário deve informar motivo do cancelamento.
-        Sistema deve processar reembolso integral automaticamente.
+    O sistema deve permitir cancelamento de reservas confirmadas.
+    Funcionário deve informar motivo do cancelamento.
+    Sistema deve processar reembolso integral automaticamente.
 
     4.9. Check-in de Jogadores
 
     RF-037: Scanner de QR Code
-        O sistema deve permitir escaneamento de QR codes apresentados pelos jogadores.
-        Scanner deve validar autenticidade e validade do código.
-        Sistema deve registrar check-in com timestamp.
+    O sistema deve permitir escaneamento de QR codes apresentados pelos jogadores.
+    Scanner deve validar autenticidade e validade do código.
+    Sistema deve registrar check-in com timestamp.
 
     4.10. Relatórios
 
     RF-038: Relatórios de Métricas
-        O sistema deve gerar relatórios com métricas:
-            Receitas por período
-            Ticket médio
-            Percentual de ocupação
-            Quantidade de agendamentos
-            Índice de faltas
-        Períodos disponíveis: dia, semana, mês, ano.
+    O sistema deve gerar relatórios com métricas:
+    Receitas por período
+    Ticket médio
+    Percentual de ocupação
+    Quantidade de agendamentos
+    Índice de faltas
+    Períodos disponíveis: dia, semana, mês, ano.
 
     RF-039: Drill-down por Quadra
-        O sistema deve permitir detalhamento de métricas por quadra específica.
-        Drill-down deve estar disponível através de clique nos gráficos principais.
+    O sistema deve permitir detalhamento de métricas por quadra específica.
+    Drill-down deve estar disponível através de clique nos gráficos principais.
 
     4.11. Processos e Regras de Negócio Centrais
 
     RF-040: Gerenciamento de Estados de Lista
-        O sistema deve implementar máquina de estados para listas:
-            VAZIA → ABERTA → EM DISPUTA → ESPERANDO → RESERVADO → CONCLUÍDO
-            Estados alternativos: PERDIDO, CANCELADA, CANCELADA_PELA_ARENA
-        Transições devem seguir regras específicas detalhadas no Apêndice A.
+    O sistema deve implementar máquina de estados para listas:
+    VAZIA → ABERTA → EM DISPUTA → ESPERANDO → RESERVADO → CONCLUÍDO
+    Estados alternativos: PERDIDO, CANCELADA, CANCELADA_PELA_ARENA
+    Transições devem seguir regras específicas detalhadas no Apêndice A.
 
     RF-041: Sistema de Precificação Dinâmica
-        O sistema deve calcular Preço Individual Final (PIF) baseado em:
-            Preço Base da Reserva da Arena (PBRA)
-            Tamanho Mínimo da Lista (TML)
-            Score de Demanda do Horário/Quadra (SDHQ)
-            Score do Usuário (SU)
-            Desconto de organizador (20% para primeiro pagante)
-        Fórmula detalhada no Apêndice B.
+    O sistema deve calcular Preço Individual Final (PIF) baseado em:
+    Preço Base da Reserva da Arena (PBRA)
+    Tamanho Mínimo da Lista (TML)
+    Score de Demanda do Horário/Quadra (SDHQ)
+    Score do Usuário (SU)
+    Desconto de organizador (20% para primeiro pagante)
+    Fórmula detalhada no Apêndice B.
+
+    RF-041.1: Expiração do Preço Dinâmico
+    O preço dinâmico calculado para um usuário para um serviço específico deve expirar após 1 minuto e meio (90 segundos) da sua apresentação inicial ao usuário. Após a expiração, uma nova consulta ou tentativa de pagamento deve recalcular o preço com base nas condições atuais.
 
     RF-042: Sistema de Prioridade
-        O sistema deve garantir prioridade para listas que atingem estado ESPERANDO.
-        Listas concorrentes devem ser movidas para PERDIDO automaticamente.
-        Horário deve ser bloqueado para novas listas.
+    O sistema deve garantir prioridade para listas que atingem estado ESPERANDO.
+    Listas concorrentes devem ser movidas para PERDIDO automaticamente.
+    Horário deve ser bloqueado para novas listas.
 
     RF-043: Regras de Reembolso
-        O sistema deve aplicar regras específicas para reembolso:
-            Permitido se >24h antes da reserva
-            Permitido em caso de cancelamento/alteração pela arena
-            Permitido em caso de alteração significativa pelo organizador
-            Processado automaticamente para carteira in-app
+    O sistema deve aplicar regras específicas para reembolso:
+    Permitido se >24h antes da reserva
+    Permitido em caso de cancelamento/alteração pela arena
+    Permitido em caso de alteração significativa pelo organizador
+    Processado automaticamente para carteira in-app
 
     RF-044: Detecção de Chargeback
-        O sistema deve detectar chargebacks.
-        Primeiro chargeback deve resultar em bloqueio da conta para análise manual.
+    O sistema deve detectar chargebacks.
+    Primeiro chargeback deve resultar em bloqueio da conta para análise manual.
 
     RF-045: Expiração de QR Code
-        O sistema deve fazer QR codes expirarem após término do horário da reserva.
+    O sistema deve fazer QR codes expirarem após término do horário da reserva.
 
     RF-046: Registro de Faltas
-        O sistema deve registrar falta se <50% dos pagantes mínimos fizerem check-in até 10 min após início da reserva.
+    O sistema deve registrar falta se <50% dos pagantes mínimos fizerem check-in até 10 min após início da reserva.
 
-5. Modelo de Dados (Entidades Principais)
-    ___EM PROGRESSO___
+    4.12. Avaliação de Estabelecimento e Atendimento
 
-6. Requisitos Não Funcionais
+    RF-047: Avaliação da Experiência
+    O sistema deve permitir que jogadores avaliem o estabelecimento (Arena) e o atendimento recebido após a conclusão de uma reserva (lista no estado CONCLUIDO).
+    A avaliação deve incluir:
+    Nota geral (ex: escala de 1 a 5 estrelas)
+    Comentário opcional
+    O sistema deve associar a avaliação à reserva específica e ao estabelecimento.
+    Jogadores com Conta PIX ou Full devem ter permissão para avaliar. Visitantes não podem avaliar.
+
+    RF-048: Visualização de Avaliações
+    O sistema deve permitir que jogadores visualizem a nota média e comentários das avaliações de um estabelecimento (Arena).
+    Esta informação deve ser exibida na tela de detalhes do local no App do Jogador.
+
+5.  Modelo de Dados (Entidades Principais)
+    **_EM PROGRESSO_**
+
+6.  Requisitos Não Funcionais
 
     6.1. Usabilidade
     RNF-001: Interface Intuitiva
-        A interface do usuário deve ser intuitiva e fácil de usar para todos os perfis de usuário.
-        Tempo de aprendizado para funcionalidades básicas deve ser inferior a 15 minutos.
+    A interface do usuário deve ser intuitiva e fácil de usar para todos os perfis de usuário.
+    Tempo de aprendizado para funcionalidades básicas deve ser inferior a 15 minutos.
 
     RNF-002: Feedback do Sistema
-        O sistema deve fornecer feedback claro ao usuário sobre suas ações e o status do sistema.
-        Mensagens de sucesso, erro e carregamento devem ser exibidas consistentemente.
+    O sistema deve fornecer feedback claro ao usuário sobre suas ações e o status do sistema.
+    Mensagens de sucesso, erro e carregamento devem ser exibidas consistentemente.
 
     RNF-003: Navegação Consistente
-        A navegação principal nos aplicativos deve ser consistente e previsível.
-        Máximo de 3 toques para acessar qualquer funcionalidade principal.
+    A navegação principal nos aplicativos deve ser consistente e previsível.
+    Máximo de 3 toques para acessar qualquer funcionalidade principal.
 
     6.2. Performance
     RNF-004: Tempo de Resposta para Preços
-        A consulta de preço individual e disponibilidade de horários deve ser respondida em até 3 segundos sob carga normal.
+    A consulta de preço individual e disponibilidade de horários deve ser respondida em até 3 segundos sob carga normal.
 
     RNF-005: Processamento de Pagamentos
-        O processamento de pagamentos (PIX) deve refletir o status na carteira em tempo próximo ao real.
-        Máximo de 30 segundos para confirmação via webhook.
+    O processamento de pagamentos (PIX) deve refletir o status na carteira em tempo próximo ao real.
+    Máximo de 30 segundos para confirmação via webhook.
 
     RNF-006: Carregamento de Listagens
-        As telas de listagem (listas, reservas, relatórios) devem carregar em até 5 segundos com até 100 itens.
+    As telas de listagem (listas, reservas, relatórios) devem carregar em até 5 segundos com até 100 itens.
 
     6.3. Segurança
     RNF-007: Criptografia de Dados Sensíveis
-        Todos os dados sensíveis do usuário (CPF, dados de pagamento parciais, senhas) devem ser armazenados e transmitidos de forma segura.
-        Uso obrigatório de HTTPS para todas as comunicações.
+    Todos os dados sensíveis do usuário (CPF, dados de pagamento parciais, senhas) devem ser armazenados e transmitidos de forma segura.
+    Uso obrigatório de HTTPS para todas as comunicações.
 
     RNF-008: Autenticação JWT
-        O sistema deve usar autenticação baseada em JWT para proteger as APIs.
-        Tokens devem ter tempo de expiração apropriado (24h para mobile, 1h para web).
+    O sistema deve usar autenticação baseada em JWT para proteger as APIs.
+    Tokens devem ter tempo de expiração apropriado (24h para mobile, 1h para web).
 
     RNF-009: Transparência de Dados
-        O sistema deve informar claramente ao usuário o motivo da coleta de dados pessoais, especialmente o CPF.
+    O sistema deve informar claramente ao usuário o motivo da coleta de dados pessoais, especialmente o CPF.
 
     RNF-010: Prevenção de Fraude
-        O sistema deve ter mecanismos para prevenir e detectar atividades fraudulentas básicas.
-        Limite de tentativas de pagamento falhado: 3 por dia.
+    O sistema deve ter mecanismos para prevenir e detectar atividades fraudulentas básicas.
+    Limite de tentativas de pagamento falhado: 3 por dia.
 
     6.4. Confiabilidade/Disponibilidade
     RNF-011: Disponibilidade do Sistema
-        O sistema deve ter uma disponibilidade de 99.5% para as funcionalidades críticas.
-        Funcionalidades críticas: login, criação/visualização de listas, pagamento.
+    O sistema deve ter uma disponibilidade de 99.5% para as funcionalidades críticas.
+    Funcionalidades críticas: login, criação/visualização de listas, pagamento.
 
     RNF-012: Persistência de Links
-        Links públicos de listas devem permanecer acessíveis.
-        Links não devem expirar mesmo após conclusão da lista.
+    Links públicos de listas devem permanecer acessíveis.
+    Links não devem expirar mesmo após conclusão da lista.
 
     6.5. Manutenibilidade
     RNF-013: Qualidade do Código
-        O código deve seguir padrões de desenvolvimento e ser bem documentado.
-        Cobertura de testes automatizados deve ser superior a 80%.
+    O código deve seguir padrões de desenvolvimento e ser bem documentado.
+    Cobertura de testes automatizados deve ser superior a 80%.
 
     6.6. Integrações
     RNF-014: Integração com Pagamentos
-        Integração com API de Pagamentos (PIX Open Finance, Cartões).
-        Suporte a webhooks para confirmação em tempo real.
+    Integração com API de Pagamentos (PIX Open Finance, Cartões).
+    Suporte a webhooks para confirmação em tempo real.
 
     RNF-015: Integração com Google OAuth
-        Integração com Google OAuth para autenticação.
-        Suporte a refresh tokens para manter sessões ativas.
+    Integração com Google OAuth para autenticação.
+    Suporte a refresh tokens para manter sessões ativas.
 
     RNF-016: Integração com Google Maps
-        Integração com Google Maps através de abertura de link externo.
+    Integração com Google Maps através de abertura de link externo.
 
     RNF-017: Integração com Apps de Transporte
-        Integração com apps de transporte (ex: Uber) através de abertura de link externo.
+    Integração com apps de transporte (ex: Uber) através de abertura de link externo.
 
     6.7. Conformidade
     RNF-018: Conformidade com LGPD
-        O sistema deve estar em conformidade com a Lei Geral de Proteção de Dados (LGPD).
-        Implementação de consentimento explícito para coleta de dados.
-        Funcionalidade para exclusão de dados pessoais mediante solicitação.
+    O sistema deve estar em conformidade com a Lei Geral de Proteção de Dados (LGPD).
+    Implementação de consentimento explícito para coleta de dados.
+    Funcionalidade para exclusão de dados pessoais mediante solicitação.
 
-7. Fora do Escopo (MVP)
+7.  Fora do Escopo (MVP)
     Funcionalidades que não serão implementadas na primeira versão:
-        Chat/mensagens entre jogadores
-        Sistema de avaliação/rating de jogadores
-        Integração com redes sociais
-        Notificações push
-        Múltiplos idiomas
-        Programa de fidelidade/pontos
-        Reservas recorrentes
-        Sistema de disputa/arbitragem
-        API pública para terceiros
+    Chat/mensagens entre jogadores
+    Sistema de avaliação/rating de jogadores
+    Integração com redes sociais
+    Notificações push
+    Múltiplos idiomas
+    Programa de fidelidade/pontos
+    Reservas recorrentes
+    Sistema de disputa/arbitragem
+    API pública para terceiros
 
-8. Suposições e Dependências
+8.  Suposições e Dependências
     Suposições:
-        Usuários possuem smartphones com acesso à internet
-        Arenas possuem funcionários capazes de operar o app
-        Provedores de pagamento mantêm APIs estáveis
-        Google OAuth permanece disponível e gratuito
+    Usuários possuem smartphones com acesso à internet
+    Arenas possuem funcionários capazes de operar o app
+    Provedores de pagamento mantêm APIs estáveis
+    Google OAuth permanece disponível e gratuito
 
     Dependências:
-        API de pagamentos (PIX Open Finance)
-        Google OAuth
-        Serviços de blob storage para imagens
-        Provedor de hospedagem cloud
-        Certificados SSL/TLS
+    API de pagamentos (PIX Open Finance)
+    Google OAuth
+    Serviços de blob storage para imagens
+    Provedor de hospedagem cloud
+    Certificados SSL/TLS
 
 Apêndice A: Fluxo de Estados da Lista de Reserva
-    Okay, vamos detalhar cada estado possível de uma lista, explicando as regras de negócio associadas. Isso é fundamental para o entendimento do ciclo de vida de uma reserva.
+Okay, vamos detalhar cada estado possível de uma lista, explicando as regras de negócio associadas. Isso é fundamental para o entendimento do ciclo de vida de uma reserva.
 
     **Estados Possíveis da Lista e Suas Regras de Negócio:**
 
@@ -710,66 +725,65 @@ Apêndice A: Fluxo de Estados da Lista de Reserva
             *   **Sem Ações:** Nenhuma ação adicional pode ser tomada na lista.
         *   **Possíveis Transições de Saída:** Nenhuma (é um estado final).
 
-
 Apêndice B: Lógica de Precificação Dinâmica Individual (PIF)
-    Este apêndice descreve os componentes e o cálculo do Preço Individual Final (PIF) para um jogador em uma lista.
-    Fórmula Geral:  PIF (Jogador J, Lista L) = (PIB_Lista_L * Fator_Demanda_Horario_L * Fator_Score_Jogador_J) - Desconto_Organizador (se aplicável)
-    Componentes:
-        Preço Base da Reserva da Arena (PBRA):
-            Definido pela administração da arena.
-            Varia por: [Quadra] + [Dia da Semana] + [Faixa Horária Geral].
-            Exemplo: Quadra de Futebol Society, Sábado à tarde, 1 hora = R$180.
-        Tamanho Mínimo da Lista (TML):
-            Definido pelo criador da lista (Funcionário da Arena ou Organizador em lista PERDIDO).
-            Exemplo: 18 jogadores.
-        Margem de Segurança (MS):
-            Valor fixo para o MVP: 2 jogadores.
-            Usado para diluir o preço base e absorver flutuações.
-        Divisor Efetivo (DE):
-            DE = TML - MS
-            Exemplo: 18 - 2 = 16.
-        Preço Individual Base da Lista (PIB_Lista_L):
-            PIB_Lista_L = PBRA / DE
-            Exemplo: R$180 / 16 = R$11,25. Este é o custo "bruto" por vaga efetiva antes dos fatores dinâmicos.
-        Score de Demanda do Horário/Quadra (SDHQ):
-            Um valor numérico que representa o interesse atual para um [Horário Específico + Quadra Específica].
-            Eventos que Influenciam POSITIVAMENTE o SDHQ (com pesos e decaimento temporal):
-                Criação de novas listas para o mesmo [horário+quadra].
-                Número de listas ABERTAS ou EM DISPUTA concorrendo pelo mesmo [horário+quadra].
-                Chamadas ao endpoint de consulta de preço para o [horário+quadra].
-                Compartilhamento de links de listas para o [horário+quadra].
-                Conversões de "Pagar Pessoalmente" para "Pagar Antecipado" em listas no [horário+quadra].
-                Pesquisas de disponibilidade no App da Arena que incluem aquele [horário+quadra].
-            Algoritmo do SDHQ: (A ser detalhado, mas envolve soma ponderada de eventos recentes).
-        Fator de Demanda (Fator_Demanda_Horario_L):
-            Um multiplicador derivado do SDHQ.
-            Exemplo de faixas (a serem calibradas):
-                SDHQ < Threshold1: Fator = 1.0 (preço base)
-                Threshold1 <= SDHQ < Threshold2: Fator = 1.1 (10% de acréscimo)
-                SDHQ >= Threshold2: Fator = 1.2 (20% de acréscimo)
-            Se Fator > 1.0, o app exibe "Preço acima do normal devido à alta demanda".
-        Score do Usuário (SU_Jogador_J):
-            Um valor numérico que representa a "reputação" ou histórico do jogador J.
-            Eventos que Influenciam (exemplos, pesos a definir):
-                Positivo: Frequência como organizador de listas bem-sucedidas, pagamentos pontuais, baixo índice de desistência, ausência de chargebacks.
-                Negativo: Alta frequência de desistência de listas, chargebacks, histórico de faltas em reservas.
-            Algoritmo do SU: (A ser detalhado, mas envolve histórico de ações).
-        Fator de Score do Usuário (Fator_Score_Jogador_J):
-            Um multiplicador derivado do SU do Jogador J.
-            Exemplo para MVP:
-                SU "Bom": Fator = 0.98 (-2% de desconto).
-                SU "Neutro": Fator = 1.0.
-                SU "Ruim": Fator = 1.05 (+5% de acréscimo).
-        Desconto de Organizador:
-            Se o Jogador J for o primeiro pagante da Lista L (tornando-se Organizador), um desconto de 20% é aplicado sobre o valor (PIB_Lista_L * Fator_Demanda_Horario_L * Fator_Score_Jogador_J).
-    Processo de Cálculo ao Jogador Consultar Preço/Entrar na Lista:
-        Identificar Lista L e Jogador J.
-        Obter PBRA para o [horário+quadra] da Lista L.
-        Obter TML da Lista L. Calcular DE e PIB_Lista_L.
-        Calcular/Obter o SDHQ atual para o [horário+quadra] da Lista L e derivar o Fator_Demanda_Horario_L.
-        Obter o SU_Jogador_J e derivar o Fator_Score_Jogador_J.
-        Calcular o preço antes do desconto: Preco_Intermediario = PIB_Lista_L * Fator_Demanda_Horario_L * Fator_Score_Jogador_J.
-        Se Jogador J for elegível para desconto de organizador (primeiro pagante da lista VAZIA):       PIF = Preco_Intermediario * 0.80.
-        Senão:      PIF = Preco_Intermediario.
-        Arredondar o PIF para 2 casas decimais.
-    Este é o PIF que será exibido e cobrado do jogador.
+Este apêndice descreve os componentes e o cálculo do Preço Individual Final (PIF) para um jogador em uma lista.
+Fórmula Geral: PIF (Jogador J, Lista L) = (PIB*Lista_L * Fator*Demanda_Horario_L * Fator*Score_Jogador_J) - Desconto_Organizador (se aplicável)
+Componentes:
+Preço Base da Reserva da Arena (PBRA):
+Definido pela administração da arena.
+Varia por: [Quadra] + [Dia da Semana] + [Faixa Horária Geral].
+Exemplo: Quadra de Futebol Society, Sábado à tarde, 1 hora = R$180.
+Tamanho Mínimo da Lista (TML):
+Definido pelo criador da lista (Funcionário da Arena ou Organizador em lista PERDIDO).
+Exemplo: 18 jogadores.
+Margem de Segurança (MS):
+Valor fixo para o MVP: 2 jogadores.
+Usado para diluir o preço base e absorver flutuações.
+Divisor Efetivo (DE):
+DE = TML - MS
+Exemplo: 18 - 2 = 16.
+Preço Individual Base da Lista (PIB_Lista_L):
+PIB_Lista_L = PBRA / DE
+Exemplo: R$180 / 16 = R$11,25. Este é o custo "bruto" por vaga efetiva antes dos fatores dinâmicos.
+Score de Demanda do Horário/Quadra (SDHQ):
+Um valor numérico que representa o interesse atual para um [Horário Específico + Quadra Específica].
+Eventos que Influenciam POSITIVAMENTE o SDHQ (com pesos e decaimento temporal):
+Criação de novas listas para o mesmo [horário+quadra].
+Número de listas ABERTAS ou EM DISPUTA concorrendo pelo mesmo [horário+quadra].
+Chamadas ao endpoint de consulta de preço para o [horário+quadra].
+Compartilhamento de links de listas para o [horário+quadra].
+Conversões de "Pagar Pessoalmente" para "Pagar Antecipado" em listas no [horário+quadra].
+Pesquisas de disponibilidade no App da Arena que incluem aquele [horário+quadra].
+Algoritmo do SDHQ: (A ser detalhado, mas envolve soma ponderada de eventos recentes).
+Fator de Demanda (Fator_Demanda_Horario_L):
+Um multiplicador derivado do SDHQ.
+Exemplo de faixas (a serem calibradas):
+SDHQ < Threshold1: Fator = 1.0 (preço base)
+Threshold1 <= SDHQ < Threshold2: Fator = 1.1 (10% de acréscimo)
+SDHQ >= Threshold2: Fator = 1.2 (20% de acréscimo)
+Se Fator > 1.0, o app exibe "Preço acima do normal devido à alta demanda".
+Score do Usuário (SU_Jogador_J):
+Um valor numérico que representa a "reputação" ou histórico do jogador J.
+Eventos que Influenciam (exemplos, pesos a definir):
+Positivo: Frequência como organizador de listas bem-sucedidas, pagamentos pontuais, baixo índice de desistência, ausência de chargebacks.
+Negativo: Alta frequência de desistência de listas, chargebacks, histórico de faltas em reservas.
+Algoritmo do SU: (A ser detalhado, mas envolve histórico de ações).
+Fator de Score do Usuário (Fator_Score_Jogador_J):
+Um multiplicador derivado do SU do Jogador J.
+Exemplo para MVP:
+SU "Bom": Fator = 0.98 (-2% de desconto).
+SU "Neutro": Fator = 1.0.
+SU "Ruim": Fator = 1.05 (+5% de acréscimo).
+Desconto de Organizador:
+Se o Jogador J for o primeiro pagante da Lista L (tornando-se Organizador), um desconto de 20% é aplicado sobre o valor (PIB_Lista_L * Fator*Demanda_Horario_L * Fator*Score_Jogador_J).
+Processo de Cálculo ao Jogador Consultar Preço/Entrar na Lista:
+Identificar Lista L e Jogador J.
+Obter PBRA para o [horário+quadra] da Lista L.
+Obter TML da Lista L. Calcular DE e PIB_Lista_L.
+Calcular/Obter o SDHQ atual para o [horário+quadra] da Lista L e derivar o Fator_Demanda_Horario_L.
+Obter o SU_Jogador_J e derivar o Fator_Score_Jogador_J.
+Calcular o preço antes do desconto: Preco_Intermediario = PIB_Lista_L * Fator*Demanda_Horario_L * Fator_Score_Jogador_J.
+Se Jogador J for elegível para desconto de organizador (primeiro pagante da lista VAZIA): PIF = Preco_Intermediario \* 0.80.
+Senão: PIF = Preco_Intermediario.
+Arredondar o PIF para 2 casas decimais.
+Este é o PIF que será exibido e cobrado do jogador.

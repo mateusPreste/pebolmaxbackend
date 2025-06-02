@@ -144,15 +144,15 @@ endpoints:
       method: POST
       description: "Gera um novo pedido de pagamento, deve ser passado o valor e o método de pagamento e o link de pagamento é retornado"
 
-    - path: /api/payments/methods?page={page}&limit={limit}
+    - path: /api/users/me/payment-methods?page={page}&limit={limit}
       method: GET
       description: "Lista de métodos de pagamento"
 
-    - path: /api/payments/methods/default
+    - path: /api/users/me/payment-methods/default
       method: PATCH
       description: "Define método padrão do usuário logado"
 
-    - path: /api/payments/methods
+    - path: /api/users/me/payment-methods
       method: POST
       description: "Adiciona novo método de pagamento para o usuário logado"
 
@@ -182,4 +182,4 @@ endpoints:
 
     - path: /api/reports/milestones
       method: POST
-      description: "Define as metas atuais de um local, cada metrica pode ter uma meta, ela é exibida no relatório e pode ser usada para gerar notificações" 
+      description: "Define as metas atuais de um local, cada metrica pode ter uma meta, ela é exibida no relatório e pode ser usada para gerar notificações"

@@ -520,18 +520,16 @@ CREATE TABLE check_in_tokens (
 CREATE INDEX idx_check_in_tokens_lookup ON check_in_tokens (token); -- Para buscar pelo token durante a verificação
 CREATE INDEX idx_check_in_tokens_user_reservation_active ON check_in_tokens (reservation_id, usuario_id, is_used); -- Para buscar token ativo
 
-
 CREATE TABLE price_quotes (
-    id SERIAL PRIMARY KEY,
-    price_id UUID NOT NULL DEFAULT uuid_generate_v4() UNIQUE,
-    service_id INT NOT NULL,
-    usuario_id INT NOT NULL,
-    quoted_price NUMERIC(12, 2) NOT NULL,
-    currency VARCHAR(3) NOT NULL DEFAULT 'BRL',
-    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    price_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(), -- Chave Primária (UUID) e ID Externo da cotação
+    service_id INT NOT NULL,                              -- ID do 'service' (item pagável) para o qual o preço foi cotado
+    usuario_id INT NOT NULL,                              -- ID do usuário para quem o preço foi cotado
+    quoted_price NUMERIC(12, 2) NOT NULL,                 -- O preço cotado
+    currency VARCHAR(3) NOT NULL DEFAULT 'BRL',           -- Moeda do preço cotado
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,         -- Data/hora em que a cotação expira (ex: NOW() + INTERVAL '5 minutes')
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    is_used BOOLEAN NOT NULL DEFAULT FALSE,
-    used_at TIMESTAMP WITH TIME ZONE NULL, -- Quando foi usado para criar uma transação
+    is_used BOOLEAN NOT NULL DEFAULT FALSE,               -- Indica se esta cotação já foi usada para iniciar uma transação
+    used_at TIMESTAMP WITH TIME ZONE NULL,                -- Data/hora em que a cotação foi usada
     FOREIGN KEY (service_id) REFERENCES services(service_id) ON DELETE CASCADE,
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 );
